@@ -1,0 +1,23 @@
+
+.game-advice{border:1px solid #45534a;border-radius:7px;background:#242a26;padding:14px;margin:12px 0 17px}
+.game-advice-top{display:flex;justify-content:space-between;gap:15px;align-items:center}
+.game-advice-top>div{display:flex;flex-direction:column;gap:5px}
+.game-advice-eyebrow{font-size:10px;font-weight:750;letter-spacing:.9px;color:#a1cba8}
+.game-advice-top strong{font-size:15px;font-weight:650;color:#f0f5f1}
+.game-advice-top small{font-size:11px;color:#adb6ae;line-height:1.6}
+.game-advice-top button{background:#c3e8c8;border:1px solid #d0f0d5;color:#1d2c21;padding:9px 11px;border-radius:5px;white-space:nowrap;font-size:11px;font-weight:650}
+.game-advice-items{margin-top:11px;padding-top:9px;border-top:1px solid #405047;display:grid;gap:5px}
+.game-advice-items p{margin:0;color:#c5d0c7;font-size:11px;line-height:1.55}
+.game-background-options{border:1px solid #404043;background:#292929;border-radius:7px;padding:13px;margin:14px 0}
+.game-background-heading{display:grid;gap:5px;margin:0 0 10px}
+.game-background-heading strong{font-size:13px}
+.game-background-heading small{font-size:11px;line-height:1.5;color:#aaa}
+.game-number-setting{display:flex;align-items:center;justify-content:space-between;gap:11px;font-size:11px;color:#c9c9cb;margin:9px 0 11px}
+.game-number-setting input{width:70px;color:#e5e5e5;border:1px solid #575759;border-radius:5px;background:#222;padding:7px;font-size:12px}
+.game-number-group{display:grid;gap:2px}
+.game-background-warning{font-size:11px;line-height:1.65;color:#b8ad90;margin:12px 0 0}
+
+.vr-background-rules{padding:12px;border:1px solid #404044;border-radius:6px;background:#292929;margin:14px 0}
+.vr-background-rules>strong{display:block;font-size:12px;color:#f3f3f3}
+.vr-background-rules>p{font-size:11px;line-height:1.5;color:#b0b0b0;margin:8px 0}
+.vr-background-rules .vr-field input{max-width:110px}
