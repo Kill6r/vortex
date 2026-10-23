@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, Tray } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, Tray, shell } from 'electron';
 import fs from 'node:fs';
 import { explainWindowsError } from '../core/errors.js';
 import { createLiveMetricsController } from './live-metrics.js';
@@ -19,6 +19,7 @@ import { createSettingsStore } from './settings-store.js';
 import { createTelemetryController } from './telemetry.js';
 import { getStartupStatus, setStartupStatus } from './startup.js';
 import { windowSettings } from '../core/window-settings.js';
+import { readVisualSettings, changeVisualSetting, restoreVisualSetting, readGraphicsStatus, changeHags, restoreHags, readStartupIoRule, changeStartupIoRule, restoreStartupIoRule, readSecurityStatus } from './windows-tweaks.js';
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow = null;
@@ -176,6 +177,37 @@ app.whenReady().then(() => {
   register('system:hardware', () => getHardwareDetails());
   register('system:services', () => listWindowsServices());
   register('system:hvci', () => getHvciStatus());
+  register('windows:visual', () => readVisualSettings());
+  register('windows:visual-set', (_event, key, enabled) => changeVisualSetting(key, enabled, settings));
+  register('windows:visual-restore', (_event, key) => restoreVisualSetting(key, settings));
+  register('windows:graphics', () => readGraphicsStatus());
+  register('windows:hags-set', (_event, enabled) => changeHags(enabled, settings));
+  register('windows:hags-restore', () => restoreHags(settings));
+  register('windows:io-rule', (_event, exe) => readStartupIoRule(exe));
+  register('windows:io-rule-set', (_event, exe, level) => changeStartupIoRule(exe, level, settings));
+  register('windows:io-rule-restore', (_event, exe) => restoreStartupIoRule(exe, settings));
+  register('windows:security', () => readSecurityStatus());
+  register('windows:open-setting', async (_event, target) => {
+    const destinations = {
+      visualPerformance: 'SystemPropertiesPerformance.exe',
+      power: 'ms-settings:powersleep',
+      graphics: 'ms-settings:display-advancedgraphics',
+      update: 'ms-settings:windowsupdate',
+      defender: 'windowsdefender:'
+    };
+    if (!Object.hasOwn(destinations, target)) throw new Error('Esta seccion de Windows no esta permitida.');
+    if (target === 'visualPerformance') {
+      const { spawn } = await import('node:child_process');
+      return new Promise((resolve, reject) => {
+        const child = spawn('SystemPropertiesPerformance.exe', [], { detached: true, windowsHide: false, stdio: 'ignore' });
+        child.once('error', reject);
+        child.once('spawn', () => { child.unref(); resolve(true); });
+      });
+    }
+    await shell.openExternal(destinations[target]);
+    return true;
+  });
+
   register('system:history', () => history.read());
   register('memory:snapshot', () => memory.snapshot());
   register('memory:clean', (_event, request) => memory.clean(request));

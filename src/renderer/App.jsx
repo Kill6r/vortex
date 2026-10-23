@@ -13,6 +13,8 @@ import MemoryPage from './MemoryPage.jsx';
 import GamesPage from './GamesPage.jsx';
 import RulesPage from './RulesPage.jsx';
 import StartupPage from './StartupPage.jsx';
+import { WindowsTweaksPage, GraphicsPage, SecurityPage } from './WindowsTweaksPage.jsx';
+import './windows-tweaks.css';
 
 const navigation = [
   { id: 'inicio', label: 'Panel principal', icon: LayoutDashboard },
@@ -20,6 +22,8 @@ const navigation = [
   { id: 'memoria', label: 'Memoria RAM', icon: MemoryStick },
   { id: 'juegos', label: 'Modo juego', icon: Gamepad2 },
   { id: 'reglas', label: 'Reglas de procesos', icon: BookMarked },
+  { id: 'windows', label: 'Ajustes de Windows', icon: SlidersHorizontal },
+  { id: 'graficos', label: 'Graficos y GPU', icon: Monitor },
   { id: 'seguridad', label: 'Seguridad', icon: ShieldCheck },
   { id: 'historial', label: 'Historial', icon: FileClock }
 ];
@@ -30,7 +34,7 @@ const labels = {
 };
 
 const filters = [
-  { id: 'relevant', label: 'Para tu equipo' },
+  { id: 'relevant', label: 'Recomendados' },
   { id: 'optional', label: 'Opcionales' },
   { id: 'consider', label: 'Evaluar' },
   { id: 'all', label: 'Todos' }
@@ -264,7 +268,7 @@ function App() {
     return analyzed.filter(service => {
       const matches = [service.name, service.displayName, service.advice.description].some(value => String(value).toLocaleLowerCase('es').includes(needle));
       if (!matches || (startFilter !== 'all' && service.startMode !== startFilter)) return false;
-      if (filter === 'relevant') return service.advice.featured;
+      if (filter === 'relevant') return ['optional', 'consider'].includes(service.advice.level) && service.startMode !== 'Disabled';
       if (filter === 'all') return true;
       return service.advice.level === filter;
     }).sort((a, b) => priority[a.advice.level] - priority[b.advice.level] || a.displayName.localeCompare(b.displayName, 'es'));
@@ -338,7 +342,7 @@ function App() {
           <button className={`header-settings ${page === 'startup' ? 'header-settings-active' : ''}`} onClick={() => goTo('startup')} title="Configuración de VORTEX"><Settings size={17}/><span>Ajustes</span></button>
         </div>
         <div className="header-right">
-          <span className="version-text">VERSIÓN 0.80</span>
+          <span className="version-text">VERSIÓN 0.81</span>
           <button className="refresh-icon" title="Actualizar datos" aria-label="Actualizar datos" disabled={refreshing || busy} onClick={() => refresh()}><RefreshCw size={17} className={refreshing ? 'rotate' : ''}/></button>
           <div className="header-actions" ref={headerMenuRef}>
             <button className="header-menu-trigger" type="button" aria-haspopup="menu" aria-expanded={headerMenuOpen} aria-controls="vortex-actions-menu" onClick={() => setHeaderMenuOpen(open => !open)}><SlidersHorizontal size={16}/><span>Opciones</span><ChevronDown size={15} className={headerMenuOpen ? 'chevron-up' : ''}/></button>
@@ -414,7 +418,7 @@ function App() {
             </>}
 
             {page === 'servicios' && <>
-              <Heading title="Servicios de Windows" description="Administra servicios según su función, estado y utilidad." action={<button className="btn btn-dark" onClick={() => refresh()} disabled={refreshing}><RefreshCw size={16}/> Actualizar</button>}/>
+              <Heading title="Servicios de Windows" description="Primero se muestran servicios opcionales y candidatos a revisar que no estan deshabilitados. Ninguna sugerencia implica que debas desactivarlo." action={<button className="btn btn-dark" onClick={() => refresh()} disabled={refreshing}><RefreshCw size={16}/> Actualizar</button>}/>
               <div className="overview-strip">
                 <div><span>SERVICIOS DETECTADOS</span><strong>{number(services.length)}</strong></div>
                 <div><span>OPCIONALES PARA TI</span><strong className="text-teal">{number(totals.optional)}</strong></div>
@@ -459,10 +463,9 @@ function App() {
               <div className="bottom-explanation"><Info size={15}/><span>Se muestran primero los servicios relevantes. La pestaña «Todos» incluye servicios de Windows y aplicaciones, aunque no exista una recomendación específica. Ninguna modificación garantiza más FPS.</span></div>
             </>}
 
-            {page === 'seguridad' && <>
-              <Heading title="Seguridad del sistema" description="Consulta protecciones importantes antes de modificar Windows."/>
-              <div className="security-layout"><section className="panel security-panel"><div className="security-top"><ShieldCheck size={24}/><Tag tone={hvci?.running ? 'teal' : hvci?.available ? 'amber' : 'muted'}>{hvci?.available ? hvci.running ? 'ACTIVA' : 'NO ACTIVA' : 'NO DISPONIBLE'}</Tag></div><h2>Integridad de memoria (HVCI)</h2><p>Protección del código del núcleo de Windows basada en virtualización.</p><div className="info-line"><span>Estado actual</span><strong>{hvci?.available ? hvci.running ? 'En funcionamiento' : hvci.configured ? 'Configurada, pero no activa' : 'No activa' : 'No se pudo consultar'}</strong></div><div className="neutral-note"><AlertTriangle size={19}/><span>HVCI es una medida importante de seguridad. Esta versión consulta su estado, pero no la desactiva en busca de rendimiento.</span></div></section><section className="panel security-panel"><div className="security-top"><LockKeyhole size={24}/><Tag>ACTIVO</Tag></div><h2>Protección de servicios</h2><p>VORTEX permite ajustes manuales avanzados sin desbloquear componentes críticos.</p><div className="rules"><div><Check size={17}/> Confirmación individual antes de cambiar</div><div><Check size={17}/> Registro del inicio anterior</div><div><Check size={17}/> Restauración desde el historial</div><div><Check size={17}/> Servicios críticos bloqueados</div></div></section></div>
-            </>}
+            {page === 'seguridad' && <SecurityPage api={api} hvci={hvci}/> }
+            {page === 'windows' && <WindowsTweaksPage api={api}/> }
+            {page === 'graficos' && <GraphicsPage api={api}/> }
 
             {page === 'historial' && <>
               <Heading title="Historial de cambios" description="Revisa tus ajustes y restaura una configuración anterior."/>

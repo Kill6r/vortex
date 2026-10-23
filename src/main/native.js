@@ -79,7 +79,7 @@ const reverse = { io: ioLevels, gpu: gpuLevels, memory: memoryLevels };
 function identity(pid, started) {
   validateGameProcess(pid);
   if (typeof started !== 'string' || !/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(started)) throw new Error('Identidad de proceso no válida.');
-  return `$p = Get-Process -Id ${pid} -ErrorAction Stop; if ($p.StartTime.ToUniversalTime().ToString('o') -ne '${started}' -or $p.MainWindowHandle -eq 0) { throw 'El proceso cambió o no tiene ventana visible.' };`;
+  return `$p = Get-Process -Id ${pid} -ErrorAction Stop; if ($p.StartTime.ToUniversalTime().ToString('o') -ne '${started}') { throw 'El proceso cambió o no tiene ventana visible.' };`;
 }
 
 export async function readAdvancedProcess(pid, started, execute = executeJson) {

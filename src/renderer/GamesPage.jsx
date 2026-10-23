@@ -52,6 +52,7 @@ export default function GamesPage({ api, onOpenRules }) {
   const [recommendationBusy, setRecommendationBusy] = useState(false);
   const [diagnostic, setDiagnostic] = useState(null);
   const [diagnosticBusy, setDiagnosticBusy] = useState(false);
+  const [startupIo, setStartupIo] = useState(null);
   const polling = useRef(false);
   const selected = processes.find(item => item.pid === selectedPid);
   const saved = selected ? findRuleForProcess(rules, selected) : null;
@@ -83,6 +84,9 @@ export default function GamesPage({ api, onOpenRules }) {
     setSelectedPid(item.pid);
     setDiagnostic(null);
     setRecommendation(null);
+    setStartupIo(null);
+    const executable = `${item.name.replace(/\.exe$/i, '')}.exe`;
+    api.startupIoRule(executable).then(setStartupIo).catch(() => {});
     const preferred = rule?.priority || item.priority;
     setPriority(cpuLevels.some(([key]) => key === preferred) ? preferred : 'AboveNormal');
     setAdvanced({ ...advancedDefaults, ...rule?.advanced });
@@ -133,6 +137,18 @@ export default function GamesPage({ api, onOpenRules }) {
       await verify(pid);
       return result;
     }, kind === 'gpuPreference' ? 'Preferencia de GPU guardada. Reinicia el juego para solicitar el cambio.' : `${diagnosticNames[kind] || kind}: cambio verificado por Windows.`);
+  }
+  async function applyIoOnLaunch(restore = false) {
+    if (!selected) return;
+    const exe = `${selected.name.replace(/\.exe$/i, '')}.exe`;
+    const level = advanced.io;
+    if (!restore && (!level || !window.confirm(`Guardar E/S ${ioNames[level] || level} para ${exe} en Windows? La regla se aplica al iniciar de nuevo el juego y podria ser ignorada por el anticheat.`))) return;
+    if (restore && !window.confirm(`Restaurar la configuracion original de E/S de ${exe}?`)) return;
+    run(async () => {
+      const result = restore ? await api.restoreStartupIoRule(exe) : await api.setStartupIoRule(exe, level);
+      setStartupIo(await api.startupIoRule(exe));
+      return result;
+    }, restore ? 'Regla de E/S restaurada. Reinicia el juego.' : 'Regla registrada en Windows. Reinicia el juego para comprobar si surte efecto.');
   }
   function openMenu(event, item) {
     event.preventDefault();
@@ -189,6 +205,7 @@ export default function GamesPage({ api, onOpenRules }) {
           {advancedOpen && <div className="vg-advanced">
             <Picker label="Prioridad de GPU" description="Prioridad de programación gráfica, si el controlador lo admite." value={advanced.gpu} onChange={value => update('gpu', value)} values={gpuLevels} names={gpuNames} busy={busy} onApply={() => apply('gpu', advanced.gpu)}/>
             <Picker label="Prioridad de E/S" description="Alta es experimental: Windows puede rechazarla o devolverla a Normal. Se comprueba el valor aplicado." value={advanced.io} onChange={value => update('io', value)} values={ioLevels} names={ioNames} busy={busy} onApply={() => apply('io', advanced.io)}/>
+            <div className="vt-io-fallback"><strong>Regla de E/S al iniciar el juego</strong><small>Si Vanguard impide cambiar la prioridad de un proceso abierto, registra la prioridad por ejecutable con Windows. No fuerza ni evita la proteccion del juego. Requiere permisos de administrador y reiniciar el juego.</small><div className="vt-io-actions"><span>{startupIo?.level ? `Regla registrada: ${ioNames[startupIo.level]}` : 'Sin regla registrada'}</span><button className="btn btn-dark" disabled={busy || !advanced.io} onClick={() => applyIoOnLaunch(false)}>Guardar al iniciar</button><button className="btn btn-dark" disabled={busy || !startupIo?.level} onClick={() => applyIoOnLaunch(true)}>Restaurar</button></div></div>
             <Picker label="Prioridad de memoria" description="Preferencia de páginas; no reserva ni libera RAM." value={advanced.memory} onChange={value => update('memory', value)} values={memoryLevels} names={memoryNames} busy={busy} onApply={() => apply('memory', advanced.memory)}/>
             <Picker label="Modo de alta eficiencia" description="EcoQoS reduce consumo en segundo plano. Alto rendimiento pide HighQoS, sin prometer más FPS." value={advanced.efficiency} onChange={value => update('efficiency', value)} values={ecoLevels} names={efficiencyNames} busy={busy} onApply={() => apply('efficiency', advanced.efficiency)}/>
             <Picker label="Impulso dinámico de hilos" description="Permite o bloquea los impulsos temporales del planificador para los hilos de este proceso. No sube la prioridad base." value={advanced.threadBoost} onChange={value => update('threadBoost', value)} values={threadBoostLevels} names={boostNames} busy={busy} onApply={() => apply('threadBoost', advanced.threadBoost)}/>

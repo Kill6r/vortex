@@ -1,7 +1,7 @@
 {
   "name": "vortex-optimizer",
-  "version": "0.8.0",
-  "description": "Optimizador de Windows con gestion de procesos, servicios, memoria y perfiles para juegos",
+  "version": "0.8.1",
+  "description": "Optimizador de Windows con procesos, servicios, perfiles gaming y ajustes visuales y graficos",
   "productName": "VORTEX",
   "type": "module",
   "main": "src/main/index.js",

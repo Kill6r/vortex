@@ -1,5 +1,16 @@
 # Cambios de VORTEX
 
+## v0.81 - Ajustes graficos y del sistema
+
+- E/S por ejecutable al iniciar como alternativa experimental cuando un juego rechaza el ajuste directo.
+- Copia y restauracion de los valores originales de E/S del registro; la regla no garantiza que el proceso protegido acepte el cambio.
+- Nuevo apartado Ajustes de Windows: animaciones, transparencia y accesos a energia y efectos visuales.
+- Nuevo apartado Graficos y GPU: lectura y solicitud de HAGS, advertencia de reinicio y guia para verificar ReBAR.
+- Seguridad reorganizada: estado de Defender, Windows Update e HVCI, con enlaces a la configuracion oficial y aviso sobre riesgos.
+- Servicios abre por defecto en Recomendados, con candidatos opcionales que siguen habilitados.
+- Version visible 0.81 e interna 0.8.1. Dependencias sin cambios.
+- Seis pruebas nuevas para reglas de E/S, valores de GPU y restauracion de ajustes.
+
 ## v0.80 — Limpiar memoria integrado
 
 - Eliminado el apartado separado «Caché standby» y añadida su funcionalidad a «Memoria RAM».

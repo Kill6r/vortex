@@ -1,10 +1,20 @@
-# VORTEX 0.8.0
-
-## Descripcion
-
-VORTEX es un optimizador de Windows con administracion de servicios, perfiles de rendimiento para juegos, supervision de procesos, herramientas de memoria y ajustes avanzados. Desarrollado en JavaScript ES6+, Node.js, Electron y React.
+# VORTEX 0.8.1
 
 Optimizador de escritorio para Windows 10 y 11. Implementado con JavaScript ES6+, Node.js, Electron, React y PowerShell. Interfaz en español, paneles planos y sin degradados decorativos.
+
+## Nuevo en v0.81 - Graficos, Windows y seguridad
+
+En **Servicios**, el filtro inicial **Recomendados** muestra candidatos opcionales y servicios pendientes de evaluar que aun no estan deshabilitados. Las recomendaciones dependen de las funciones que marques como utilizadas. Revisar un servicio no significa que sea seguro deshabilitarlo ni garantiza mas FPS. VORTEX no cambia ningun servicio sin tu confirmacion.
+
+**Ajustes de Windows** ofrece animaciones de ventanas y transparencia con lectura del valor del registro, confirmacion y restauracion del valor anterior. Tambien permite abrir las opciones oficiales de efectos visuales y energia. Algunos cambios necesitan cerrar sesion para reflejarse completamente.
+
+**Graficos y GPU** permite solicitar activar o desactivar HAGS y verificar el valor guardado en el registro. Es necesario reiniciar el equipo y comprobar el estado efectivo desde Windows; el valor guardado no demuestra que el controlador admita la funcion. **Resizable BAR (ReBAR)** muestra la GPU detectada y como comprobar la compatibilidad en el panel del fabricante o BIOS. No se afirma conocer el estado real de ReBAR sin una comprobacion fiable.
+
+**Modo juego** incorpora **Guardar E/S al iniciar** como alternativa para juegos con procesos protegidos, como VALORANT. Guarda una regla de `IoPriority` exclusivamente en `Image File Execution Options/<ejecutable>/PerfOptions` para que Windows pueda aplicarla al proximo inicio del ejecutable. Requiere administrador y reiniciar el juego. El anticheat o Windows pueden impedir o ignorar la regla; confirmar que el registro se guardo no confirma que la prioridad real del proceso haya cambiado. Incluye boton para restaurar el valor original, no modifica `Debugger` y no intenta evitar restricciones de Vanguard.
+
+En **Seguridad** puedes consultar el estado basico de Defender, Windows Update e HVCI y abrir las herramientas oficiales de Windows. No se deshabilita Defender ni Windows Update automaticamente, ya que hacerlo puede dejar el sistema expuesto. HVCI muestra una advertencia y una aceptacion explicita antes de abrir su gestion oficial; no hay desactivacion silenciosa.
+
+No se han agregado dependencias. El codigo pasa pruebas automatizadas de la logica y validacion de sintaxis JSX, pero las operaciones de registro y compatibilidad deben verificarse directamente en Windows. Haz una copia de seguridad y evita probar ajustes delicados durante partidas.
 
 ## Nuevo en v0.80 — Limpiar memoria integrado
 
