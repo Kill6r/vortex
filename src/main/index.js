@@ -17,6 +17,7 @@ import { createGameProfileStore } from './profiles.js';
 import { adminStatus, requestElevation } from './admin.js';
 import { createSettingsStore } from './settings-store.js';
 import { createTelemetryController } from './telemetry.js';
+import { isGameProcessCandidate } from '../core/game-discovery.js';
 import { getStartupStatus, setStartupStatus } from './startup.js';
 import { windowSettings } from '../core/window-settings.js';
 import { readVisualSettings, changeVisualSetting, restoreVisualSetting, readGraphicsStatus, changeHags, restoreHags, readStartupIoRule, changeStartupIoRule, restoreStartupIoRule, readSecurityStatus } from './windows-tweaks.js';
@@ -125,7 +126,7 @@ app.whenReady().then(() => {
         return details.gpus.filter(name => !/microsoft basic|remote display/i.test(name)).length;
       } catch { return 0; }
     },
-    listProcesses: async () => (await telemetry.snapshot()).groups.flatMap(group => group.entries.filter(item => item.visible).map(item => ({ ...item, groupCpuPercent: group.cpuPercent, groupMemory: group.memory, ramPercent: group.ramPercent, gpuPercent: group.gpuPercent, processCount: group.count }))) });
+    listProcesses: async () => (await telemetry.snapshot()).groups.flatMap(group => group.entries.filter(isGameProcessCandidate).map(item => ({ ...item, groupCpuPercent: group.cpuPercent, groupMemory: group.memory, ramPercent: group.ramPercent, gpuPercent: group.gpuPercent, processCount: group.count }))) });
   const standby = createStandbyController({ store: settings, canAutomate: () => automaticOptimizations, gameActive: () => Boolean(gaming.status()), runPurge: mode => runStandbyHelper(mode, { packaged: app.isPackaged }) });
   const memory = createMemoryController(() => gaming.status(), { store: settings, telemetry, canAutomate: () => automaticOptimizations });
 

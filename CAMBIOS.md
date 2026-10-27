@@ -1,3 +1,13 @@
+# Cambios
+
+## v0.82
+
+- Corregir la deteccion de VALORANT-Win64-Shipping en segundo plano.
+- Mostrar juegos detectados sin acceso completo en lugar de ocultarlos.
+- Mejorar los errores de E/S y no marcar como aplicado un valor que Windows no confirme.
+- Detectar instalaciones anteriores en el Setup y permitir reinstalar con o sin restablecer los perfiles locales.
+- Conservar copias de seguridad de los archivos restablecidos.
+
 # Cambios de VORTEX
 
 ## v0.81 - Ajustes graficos y del sistema

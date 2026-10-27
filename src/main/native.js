@@ -97,8 +97,21 @@ export async function setAdvancedProcess(pid, started, kind, value, execute = ex
     throw new Error('Opción de prioridad no admitida.');
   }
   const number = kind === 'trim' ? 0 : levels[kind].indexOf(value) + offsets[kind];
-  const output = await execute(`${identity(pid, started)}\n${native}\n$status = [VortexNative]::Change([uint32]${pid}, '${kind}', ${number}); [pscustomobject]@{ status = [int64]$status } | ConvertTo-Json -Compress`);
-  if (output?.status !== 0) throw new Error(`Windows rechazó la operación ${kind} (NTSTATUS ${output?.status ?? 'desconocido'}).`);
+  let output;
+  try {
+    output = await execute(`${identity(pid, started)}\n${native}\n$status = [VortexNative]::Change([uint32]${pid}, '${kind}', ${number}); [pscustomobject]@{ status = [int64]$status } | ConvertTo-Json -Compress`);
+  } catch (error) {
+    if (kind === 'io' && /acceso denegado|access is denied|access denied|privilegios|permission/i.test(String(error?.message || error))) {
+      throw new Error('Acceso denegado a la E/S del juego. Vanguard o Windows puede bloquear este cambio. Prueba Guardar al iniciar; no es posible garantizar su efecto.');
+    }
+    throw error;
+  }
+  if (output?.status !== 0) {
+    const status = Number(output?.status);
+    const code = Number.isFinite(status) ? `0x${(status >>> 0).toString(16).toUpperCase().padStart(8, '0')}` : 'desconocido';
+    if (kind === 'io') throw new Error(`Windows rechazó la prioridad de E/S (${code}). El juego puede estar protegido. Prueba Guardar al iniciar; no confirma que se aplique.`);
+    throw new Error(`Windows rechazó la operación ${kind} (${code}).`);
+  }
   if (kind === 'trim') return { pid, kind, value, applied: true, verified: false };
   const actual = await readAdvancedProcess(pid, started, execute);
   if (actual[kind] == null) throw new Error(`Windows no permite comprobar ${kind}. No se confirmará como aplicado.`);

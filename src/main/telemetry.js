@@ -17,9 +17,10 @@ $focused = [uint32]0
 $items = @(Get-Process | ForEach-Object {
  try {
   $p = $_
-  $cpu = $p.CPU
-  if ($null -eq $cpu) { $cpu = 0 }
-  $start = $p.StartTime.ToUniversalTime().ToString('o')
+  $cpu = 0
+  try { if ($null -ne $p.CPU) { $cpu = $p.CPU } } catch {}
+  $start = $null
+  try { $start = $p.StartTime.ToUniversalTime().ToString('o') } catch {}
   $affinity = $null
   try { if ($p.MainWindowHandle -ne 0) { $affinity = $p.ProcessorAffinity.ToInt64().ToString() } } catch {}
   [pscustomobject]@{
@@ -32,7 +33,7 @@ $items = @(Get-Process | ForEach-Object {
    visible = ($p.MainWindowHandle -ne 0)
    title = $p.MainWindowTitle
    foreground = ($p.Id -eq $focused)
-   priority = if ($p.MainWindowHandle -ne 0) { $p.PriorityClass.ToString() } else { 'Normal' }
+   priority = $(try { $p.PriorityClass.ToString() } catch { 'No disponible' })
    affinity = $affinity
   }
  } catch {}

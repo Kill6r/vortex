@@ -342,7 +342,7 @@ function App() {
           <button className={`header-settings ${page === 'startup' ? 'header-settings-active' : ''}`} onClick={() => goTo('startup')} title="Configuración de VORTEX"><Settings size={17}/><span>Ajustes</span></button>
         </div>
         <div className="header-right">
-          <span className="version-text">VERSIÓN 0.81</span>
+          <span className="version-text">VERSIÓN 0.82</span>
           <button className="refresh-icon" title="Actualizar datos" aria-label="Actualizar datos" disabled={refreshing || busy} onClick={() => refresh()}><RefreshCw size={17} className={refreshing ? 'rotate' : ''}/></button>
           <div className="header-actions" ref={headerMenuRef}>
             <button className="header-menu-trigger" type="button" aria-haspopup="menu" aria-expanded={headerMenuOpen} aria-controls="vortex-actions-menu" onClick={() => setHeaderMenuOpen(open => !open)}><SlidersHorizontal size={16}/><span>Opciones</span><ChevronDown size={15} className={headerMenuOpen ? 'chevron-up' : ''}/></button>

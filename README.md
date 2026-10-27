@@ -1,4 +1,4 @@
-# VORTEX 0.8.1
+# VORTEX 0.8.2
 
 Optimizador de escritorio para Windows 10 y 11. Implementado con JavaScript ES6+, Node.js, Electron, React y PowerShell. Interfaz en español, paneles planos y sin degradados decorativos.
 
@@ -212,3 +212,12 @@ VORTEX ahora abre el panel sin esperar al inventario completo de servicios de Wi
 Para actualizar, reemplaza los archivos del proyecto sin borrar `node_modules` y ejecuta `npm run dev`. Si Vite demora en arrancar después de copiar archivos, cierra todos los procesos de VORTEX y prueba a eliminar solamente la caché `node_modules/.vite`, no las dependencias.
 
 Las pruebas unitarias no sustituyen la comprobación del tiempo de apertura en Windows. Si el servidor Vite tarda antes de que aparezca la ventana, esa demora corresponde al entorno de desarrollo, no a la consulta de servicios.
+
+## Cambios en v0.82
+
+- Muestra VALORANT-Win64-Shipping aunque no tenga ventana principal.
+- Si Vanguard impide consultar la identidad del proceso, el juego sigue apareciendo como solo lectura.
+- Las modificaciones de E/S indican el error real o la falta de permisos; la regla por ejecutable solo confirma el registro, no el efecto dentro del juego.
+- El instalador comprueba si VORTEX ya esta instalado y ofrece reinstalarlo manteniendo los ajustes o restablecer los perfiles locales con copia de seguridad.
+- Restablecer los perfiles no revierte cambios previos aplicados en Windows.
+- El instalador mantiene el mismo identificador que las versiones anteriores.
