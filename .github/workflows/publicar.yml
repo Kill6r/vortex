@@ -1,5 +1,6 @@
 name: Publicar VORTEX
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
@@ -13,11 +14,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Comprobar version
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          if ("${{ github.ref_type }}" -eq "tag" -and "${{ github.ref_name }}" -ne "v$version") {
+            throw "La etiqueta no coincide con package.json: v$version"
+          }
+          Write-Host "Publicando VORTEX v$version"
       - name: Instalar dependencias
         run: npm install
       - name: Ejecutar pruebas
         run: npm test
-      - name: Publicar actualización
+      - name: Publicar instalador y archivos de actualizacion
         run: npm run publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
