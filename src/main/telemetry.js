@@ -1,7 +1,7 @@
 import os from 'node:os';
 import { executeJson } from './powershell.js';
 import { processAllowed } from '../core/performance.js';
-import { sampleProcesses, parseGpuEngines } from '../core/telemetry.js';
+import { sampleProcesses, parseGpuEngines, parseSystemGpuEngines } from '../core/telemetry.js';
 
 const processScript = String.raw`
 Add-Type -TypeDefinition @'
@@ -42,10 +42,20 @@ ConvertTo-Json -InputObject $items -Depth 3 -Compress
 `;
 
 const gpuScript = String.raw`
-$items = @(Get-CimInstance -ClassName Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine -ErrorAction Stop | Where-Object { $_.Name -match 'pid_\d+' } | ForEach-Object {
- [pscustomobject]@{ name = $_.Name; value = [double]$_.UtilizationPercentage }
-})
-ConvertTo-Json -InputObject $items -Compress -Depth 2
+$rows = @()
+try {
+  $rows = @(Get-CimInstance -ClassName Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine -ErrorAction Stop | ForEach-Object {
+    [pscustomobject]@{ name = [string]$_.Name; value = [double]$_.UtilizationPercentage }
+  })
+} catch {}
+if ($rows.Count -eq 0) {
+  try {
+    $rows = @(Get-Counter -Counter '\GPU Engine(*)\Utilization Percentage' -ErrorAction Stop | Select-Object -ExpandProperty CounterSamples | ForEach-Object {
+      [pscustomobject]@{ name = [string]$_.InstanceName; value = [double]$_.CookedValue }
+    })
+  } catch {}
+}
+ConvertTo-Json -InputObject $rows -Compress -Depth 2
 `;
 
 export function createTelemetryController(dependencies = {}) {
@@ -57,47 +67,33 @@ export function createTelemetryController(dependencies = {}) {
   let cache = null;
   let lastRead = 0;
   let pending = null;
-  let gpuLastRead = 0;
+  let gpuLastRead = -Infinity;
   let gpuSamples = {};
   let gpuSupported = null;
+  let gpuOverviewValue = null;
   let gpuPending = null;
+  const gpuIntervalMs = dependencies.gpuIntervalMs ?? 6000;
 
   async function refreshGpu() {
     if (gpuPending) return gpuPending;
-    if (clock() - gpuLastRead < 12000) return;
+    if (clock() - gpuLastRead < gpuIntervalMs) return;
     gpuLastRead = clock();
-    gpuPending = query(gpuScript).then(result => {
-      gpuSamples = parseGpuEngines(result);
-      gpuSupported = true;
+    gpuPending = query(gpuScript).then(rows => {
+      const values = Array.isArray(rows) ? rows : rows ? [rows] : [];
+      gpuSamples = parseGpuEngines(values);
+      gpuOverviewValue = parseSystemGpuEngines(values);
+      gpuSupported = gpuOverviewValue !== null;
     }).catch(() => {
       gpuSamples = {};
+      gpuOverviewValue = null;
       gpuSupported = false;
     }).finally(() => { gpuPending = null; });
     return gpuPending;
   }
 
-  let gpuOverviewPending = null;
-  let gpuOverviewCache = null;
-  let gpuOverviewAt = -Infinity;
-
   async function gpuOverview() {
-    if (gpuOverviewPending) return gpuOverviewPending;
-    if (gpuOverviewCache !== null && clock() - gpuOverviewAt < 10000) return gpuOverviewCache;
-    gpuOverviewPending = query(gpuScript).then(rows => {
-      const engines = new Map();
-      for (const row of Array.isArray(rows) ? rows : rows ? [rows] : []) {
-        const name = String(row?.name || '');
-        const match = name.match(/_luid_.+?_phys_\d+_eng_\d+_engtype_[^_]+/i);
-        const value = Number(row?.value);
-        if (!match || !Number.isFinite(value)) continue;
-        const engine = match[0].toLowerCase();
-        engines.set(engine, (engines.get(engine) || 0) + Math.max(0, value));
-      }
-      gpuOverviewCache = engines.size ? Math.min(100, Math.max(...engines.values())) : null;
-      gpuOverviewAt = clock();
-      return gpuOverviewCache;
-    }).finally(() => { gpuOverviewPending = null; });
-    return gpuOverviewPending;
+    await refreshGpu();
+    return gpuOverviewValue;
   }
 
   async function snapshot() {

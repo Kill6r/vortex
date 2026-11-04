@@ -38,6 +38,8 @@ contextBridge.exposeInMainWorld('vortex', {
   history: () => ipcRenderer.invoke('system:history'),
   changeService: (name, mode, advanced = false) => ipcRenderer.invoke('system:change-service', name, mode, advanced),
   restoreService: id => ipcRenderer.invoke('system:restore-service', id),
+  cleanerScan: (force = false) => ipcRenderer.invoke('cleaner:scan', force),
+  cleanerRun: (ids, advanced = false) => ipcRenderer.invoke('cleaner:run', ids, advanced),
   memorySnapshot: () => ipcRenderer.invoke('memory:snapshot'),
   cleanMemory: request => ipcRenderer.invoke('memory:clean', request),
   configureMemory: configuration => ipcRenderer.invoke('memory:auto', configuration),

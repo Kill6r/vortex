@@ -4,26 +4,28 @@ import {
   CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Cpu, FileClock, Gamepad2, BookMarked,
   Info, LayoutDashboard, ListFilter, LockKeyhole, MemoryStick, Minimize2,
   Monitor, RefreshCw, RotateCcw, Search, Settings, ShieldCheck, SlidersHorizontal,
-  Wrench, X, Zap, DatabaseZap
+  Wrench, X, Zap, DatabaseZap, Trash2, HardDrive, Server, Palette
 } from 'lucide-react';
 import { defaultPreferences, preferenceOptions } from '../core/catalog.js';
 import { recommendService, summarizeRecommendations } from '../core/recommendations.js';
 import { preferenceDetails } from '../core/preferences.js';
 import MemoryPage from './MemoryPage.jsx';
+import CleanerPage from './CleanerPage.jsx';
+import TweaksPage from './TweaksPage.jsx';
 import GamesPage from './GamesPage.jsx';
 import RulesPage from './RulesPage.jsx';
 import StartupPage from './StartupPage.jsx';
-import { WindowsTweaksPage, GraphicsPage, SecurityPage } from './WindowsTweaksPage.jsx';
+import { SecurityPage } from './WindowsTweaksPage.jsx';
 import './windows-tweaks.css';
 
 const navigation = [
   { id: 'inicio', label: 'Panel principal', icon: LayoutDashboard },
   { id: 'servicios', label: 'Servicios', icon: ListFilter },
   { id: 'memoria', label: 'Memoria RAM', icon: MemoryStick },
+  { id: 'cleaner', label: 'Cleaner', icon: Trash2 },
   { id: 'juegos', label: 'Modo juego', icon: Gamepad2 },
   { id: 'reglas', label: 'Reglas de procesos', icon: BookMarked },
-  { id: 'windows', label: 'Ajustes de Windows', icon: SlidersHorizontal },
-  { id: 'graficos', label: 'Graficos y GPU', icon: Monitor },
+  { id: 'tweaks', label: 'Tweaks', icon: SlidersHorizontal },
   { id: 'seguridad', label: 'Seguridad', icon: ShieldCheck },
   { id: 'historial', label: 'Historial', icon: FileClock }
 ];
@@ -342,7 +344,7 @@ function App() {
           <button className={`header-settings ${page === 'startup' ? 'header-settings-active' : ''}`} onClick={() => goTo('startup')} title="Configuración de VORTEX"><Settings size={17}/><span>Ajustes</span></button>
         </div>
         <div className="header-right">
-          <span className="version-text">VERSIÓN 0.82</span>
+          <span className="version-text">VERSIÓN 0.83</span>
           <button className="refresh-icon" title="Actualizar datos" aria-label="Actualizar datos" disabled={refreshing || busy} onClick={() => refresh()}><RefreshCw size={17} className={refreshing ? 'rotate' : ''}/></button>
           <div className="header-actions" ref={headerMenuRef}>
             <button className="header-menu-trigger" type="button" aria-haspopup="menu" aria-expanded={headerMenuOpen} aria-controls="vortex-actions-menu" onClick={() => setHeaderMenuOpen(open => !open)}><SlidersHorizontal size={16}/><span>Opciones</span><ChevronDown size={15} className={headerMenuOpen ? 'chevron-up' : ''}/></button>
@@ -351,6 +353,8 @@ function App() {
               <button role="menuitem" onClick={() => goTo('startup')}><Settings size={16}/><span>Ajustes e inicio con Windows</span></button>
               <button role="menuitem" onClick={() => goTo('servicios')}><ListFilter size={16}/><span>Administrar servicios</span></button>
               <button role="menuitem" onClick={() => goTo('memoria')}><MemoryStick size={16}/><span>Limpiar memoria</span></button>
+              <button role="menuitem" onClick={() => goTo('cleaner')}><Trash2 size={16}/><span>Cleaner de archivos</span></button>
+              <button role="menuitem" onClick={() => goTo('tweaks')}><SlidersHorizontal size={16}/><span>Tweaks de Windows y GPU</span></button>
               <button role="menuitem" onClick={() => goTo('reglas')}><BookMarked size={16}/><span>Reglas de procesos</span></button>
               <button role="menuitem" onClick={() => goTo('seguridad')}><ShieldCheck size={16}/><span>Seguridad y HVCI</span></button>
               <button role="menuitem" onClick={() => goTo('historial')}><FileClock size={16}/><span>Historial de cambios</span></button>
@@ -363,15 +367,7 @@ function App() {
         </div>
       </header>
       <aside className="sidebar">
-        <div className="sidebar-title">TU EQUIPO</div>
-        <div className="device-info">
-          <div className="device-ring"><Monitor size={35}/></div>
-          <div className="device-name">Equipo Windows</div>
-          <div className="device-system">{overview?.windows || 'Esperando análisis'}</div>
-          <div className="device-status"><span className="live-dot"/> {overview?.compatible ? 'Detectado' : 'Sin conectar'}</div>
-        </div>
-        <div className="side-stat"><span>MEMORIA EN USO</span><strong>{ramPercentage}%</strong><Bar value={ramPercentage} tone="teal"/></div>
-        <div className="side-group"><span>GENERAL</span>{navigation.map(item => navigationButton(item))}</div>
+        <div className="side-group"><span>HERRAMIENTAS</span>{navigation.map(item => navigationButton(item))}</div>
         
         <div className="side-bottom"><span>VORTEX / DESKTOP</span><span>WINDOWS 10 — 11</span></div>
       </aside>
@@ -381,40 +377,22 @@ function App() {
           {message && <div className={`message message-${message.kind}`}><span>{message.kind === 'error' ? <AlertTriangle size={17}/> : <CheckCircle2 size={17}/>} {message.text}</span><button aria-label="Cerrar" onClick={() => setMessage(null)}><X size={16}/></button></div>}
           {loading && !overview ? <div className="loading"><span className="loader"/><p>Analizando Windows…</p></div> : <>
             {page === 'inicio' && <>
-              <Heading title="Resumen del sistema" description="Rendimiento y configuración de este equipo." action={<button className="btn btn-dark" onClick={() => refresh()} disabled={refreshing}><RefreshCw size={16}/> Actualizar</button>}/>
-              <div className="win-overview">
-                <div className="win-overview-title"><span><Monitor size={17}/> Estado del equipo</span><small>Información actual del sistema</small></div>
-                <div className="win-overview-grid">
-                  <div><span>Procesador</span><strong>{overview?.cpu || 'No detectado'}</strong><small>{overview?.threads || '—'} hilos lógicos</small></div>
-                  <div><span>Tarjeta gráfica</span><strong>{overview?.gpus?.[0] || 'No detectada'}</strong><small>Configuración del dispositivo</small></div>
-                  <div><span>Memoria instalada</span><strong>{size(overview?.ramTotal)}</strong><small>{ramPercentage}% en uso</small></div>
-                  <div><span>Servicios opcionales</span><strong>{servicesLoaded ? number(totals.optional) : "—"}</strong><small>Según tus preferencias</small></div>
-                </div>
-                <div className="win-overview-actions"><button className="btn btn-dark" onClick={() => setPage('servicios')}>Administrar servicios <ArrowRight size={15}/></button><button className="btn btn-dark" onClick={() => setPage('juegos')}>Configurar juegos <Gamepad2 size={15}/></button><button className="btn btn-dark" onClick={() => setPage('memoria')}>Limpiar memoria <MemoryStick size={15}/></button></div>
+              <div className="v83-title"><div><span className="v83-eyebrow">VORTEX · PANEL PRINCIPAL</span><h1>Tu equipo, a tu manera<span>.</span></h1><p>Hardware, rendimiento y herramientas en un solo lugar.</p></div><button className="btn btn-dark" onClick={() => refresh()} disabled={refreshing}><RefreshCw size={16}/> Actualizar</button></div>
+              <div className="v83-hardware-grid">
+                <div className="v83-hardware-card v83-blue"><div className="v83-card-top"><span className="v83-card-icon"><Cpu size={20}/></span><span>CPU</span></div><small>Procesador</small><strong>{overview?.cpu || 'No disponible'}</strong><span className="v83-detail">{overview?.cores ? `${overview.cores} nucleos` : `${overview?.threads || '—'} hilos logicos`}</span></div>
+                <div className="v83-hardware-card v83-cyan"><div className="v83-card-top"><span className="v83-card-icon"><Gamepad2 size={20}/></span><span>GPU</span></div><small>Tarjeta grafica</small><strong>{overview?.gpus?.[0] || 'No disponible'}</strong><span className="v83-detail">Uso: {Number.isFinite(live?.gpuUsage) ? `${live.gpuUsage > 0 && live.gpuUsage < 0.1 ? '<0.1' : live.gpuUsage.toFixed(1)}%` : 'sin datos'} · muestra cada 6 s</span></div>
+                <div className="v83-hardware-card v83-purple"><div className="v83-card-top"><span className="v83-card-icon"><MemoryStick size={20}/></span><span>Memoria</span></div><small>RAM instalada</small><strong>{size(overview?.ramTotal)}</strong><span className="v83-detail">{overview?.memoryType || 'Memoria del sistema'}</span></div>
+                <div className="v83-hardware-card v83-red"><div className="v83-card-top"><span className="v83-card-icon"><Monitor size={20}/></span><span>Sistema</span></div><small>Sistema operativo</small><strong>{overview?.windows || 'Windows'}</strong><span className="v83-detail">{overview?.windowsBuild || 'Windows 10 / 11'}</span></div>
+                <div className="v83-hardware-card v83-orange"><div className="v83-card-top"><span className="v83-card-icon"><HardDrive size={20}/></span><span>Almacenamiento</span></div><small>Unidad principal</small><strong>{overview?.disk?.name || 'No disponible'}</strong><span className="v83-detail">{overview?.disk?.size ? size(overview.disk.size) : 'Capacidad no disponible'}</span></div>
+                <button className="v83-hardware-card v83-green v83-hardware-action" onClick={() => goTo('tweaks')}><div className="v83-card-top"><span className="v83-card-icon"><Wrench size={20}/></span><span>Tweaks</span><ArrowUpRight size={15} className="v83-arrow"/></div><small>Ajustes de rendimiento</small><strong>Windows y GPU</strong><span className="v83-detail">Animaciones, HAGS, ReBAR y mas</span></button>
               </div>
-              <div className="section-caption"><h3>ESTADO DE RECURSOS</h3><span>Datos recientes · GPU estimada, puede diferir del Administrador de tareas</span></div>
-              <div className="stat-grid">
-                <Stat icon={Cpu} label="PROCESADOR" value={Number.isFinite(live?.cpuUsage) ? `${live.cpuUsage.toFixed(1)}%` : '—'} sub={`${overview?.threads || '—'} hilos · actualización cada 2 s`} percentage={live?.cpuUsage ?? undefined} tone="lime"/>
-                <Stat icon={Gamepad2} label="GPU" value={Number.isFinite(live?.gpuUsage) ? `${live.gpuUsage.toFixed(1)}%` : '—'} sub={live?.gpuEstimated ? 'Estimación por motores GPU' : 'Contadores no disponibles'} percentage={live?.gpuUsage ?? undefined} tone="teal"/>
-                <Stat icon={MemoryStick} label="MEMORIA RAM" value={`${ramPercentage}%`} sub={`${size((ramTotal || 0) - (ramAvailable || 0))} / ${size(ramTotal)}`} percentage={ramPercentage} tone="teal"/>
-                <Stat icon={SlidersHorizontal} label="SERVICIOS" value={servicesLoaded ? number(services.length) : "—"} sub="Consultados al abrir Servicios"/>
-                <Stat icon={Wrench} label="OPCIONALES" value={servicesLoaded ? number(totals.optional) : "—"} sub="Según tus preferencias"/>
+              <div className="v83-section-title"><h2>Rendimiento del sistema</h2><small>Datos recientes · la GPU puede diferir del Administrador de tareas</small></div>
+              <div className="v83-metrics">
+                <div><span><Cpu size={16}/> CPU</span><strong>{Number.isFinite(live?.cpuUsage) ? `${live.cpuUsage.toFixed(1)}%` : '—'}</strong><Bar value={live?.cpuUsage || 0} tone="teal"/></div>
+                <div><span><Gamepad2 size={16}/> GPU</span><strong>{Number.isFinite(live?.gpuUsage) ? live.gpuUsage > 0 && live.gpuUsage < 0.1 ? '<0.1%' : `${live.gpuUsage.toFixed(1)}%` : 'No disponible'}</strong><Bar value={live?.gpuUsage || 0} tone="teal"/></div>
+                <div><span><MemoryStick size={16}/> RAM</span><strong>{ramPercentage}%</strong><Bar value={ramPercentage} tone="teal"/></div>
               </div>
-              <div className="section-caption"><h3>INFORMACIÓN DEL EQUIPO</h3></div>
-              <div className="info-grid">
-                <div className="panel information-panel">
-                  <div className="panel-title"><h3>Hardware</h3><Cpu size={17}/></div>
-                  <div className="info-line"><span>Procesador</span><strong>{overview?.cpu || '—'}</strong></div>
-                  <div className="info-line"><span>Gráficos</span><strong>{overview?.gpus?.join(', ') || 'No detectados'}</strong></div>
-                  <div className="info-line"><span>RAM instalada</span><strong>{size(overview?.ramTotal)}</strong></div>
-                  <div className="info-line"><span>Sistema operativo</span><strong>{overview?.windows || '—'}</strong></div>
-                </div>
-                <div className="panel information-panel">
-                  <div className="panel-title"><h3>Accesos rápidos</h3><ArrowUpRight size={17}/></div>
-                  <button className="quick-link" onClick={() => openServices('optional')}><span className="quick-icon"><SlidersHorizontal size={19}/></span><span><strong>Servicios opcionales</strong><small>Consulta funciones que has marcado como no utilizadas.</small></span><ChevronRight size={18}/></button>
-                  <button className="quick-link" onClick={() => setPage('seguridad')}><span className="quick-icon"><ShieldCheck size={19}/></span><span><strong>Seguridad de Windows</strong><small>Comprueba el estado de integridad de memoria (HVCI).</small></span><ChevronRight size={18}/></button>
-                </div>
-              </div>
+              <div className="v83-quick-row"><div><Zap size={20}/><span><strong>¿Quieres optimizar tu equipo?</strong><small>Revisa ajustes recomendados y limpia archivos que no necesitas.</small></span></div><button className="btn btn-dark" onClick={() => goTo('cleaner')}><Trash2 size={15}/> Cleaner</button><button className="btn btn-dark" onClick={() => goTo('tweaks')}><SlidersHorizontal size={15}/> Tweaks</button></div>
             </>}
 
             {page === 'servicios' && <>
@@ -464,8 +442,8 @@ function App() {
             </>}
 
             {page === 'seguridad' && <SecurityPage api={api} hvci={hvci}/> }
-            {page === 'windows' && <WindowsTweaksPage api={api}/> }
-            {page === 'graficos' && <GraphicsPage api={api}/> }
+            {page === 'tweaks' && <TweaksPage api={api}/> }
+            {page === 'cleaner' && <CleanerPage api={api}/> }
 
             {page === 'historial' && <>
               <Heading title="Historial de cambios" description="Revisa tus ajustes y restaura una configuración anterior."/>

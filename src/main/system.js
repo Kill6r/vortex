@@ -31,9 +31,28 @@ export async function getHardwareDetails() {
   if (hardwareCache) return hardwareCache;
   if (hardwarePending) return hardwarePending;
   if (process.platform !== 'win32') return { windows: `${os.type()} ${os.release()}`, gpus: [] };
-  hardwarePending = executeJson(`$os = Get-CimInstance Win32_OperatingSystem; $gpus = @(Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name); [pscustomobject]@{windows = $os.Caption; gpus = $gpus} | ConvertTo-Json -Compress -Depth 4`)
+  hardwarePending = executeJson(String.raw`
+$win = Get-CimInstance Win32_OperatingSystem
+$gpus = @(Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
+$cpu = @(Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue)
+$disk = @(Get-CimInstance Win32_DiskDrive -ErrorAction SilentlyContinue | Sort-Object Index | Select-Object -First 1)
+$modules = @(Get-CimInstance Win32_PhysicalMemory -ErrorAction SilentlyContinue)
+$memoryLabel = ''
+if ($modules.Count -gt 0) {
+ $kind = [int]$modules[0].SMBIOSMemoryType
+ $memoryLabel = switch ($kind) { 24 { 'DDR3' } 26 { 'DDR4' } 34 { 'DDR5' } default { '' } }
+}
+[pscustomobject]@{
+ windows = [string]$win.Caption
+ windowsBuild = [string]$win.Version
+ gpus = $gpus
+ cores = [int](@($cpu | Measure-Object -Property NumberOfCores -Sum)[0].Sum)
+ memoryType = $memoryLabel
+ disk = $(if ($disk.Count -gt 0) { [pscustomobject]@{name=[string]$disk[0].Model; size=[int64]$disk[0].Size} } else {$null})
+} | ConvertTo-Json -Compress -Depth 5
+` )
     .then(data => {
-      hardwareCache = { windows: data?.windows || `Windows ${os.release()}`, gpus: Array.isArray(data?.gpus) ? data.gpus : data?.gpus ? [data.gpus] : [] };
+      hardwareCache = { windows: data?.windows || `Windows ${os.release()}`, gpus: Array.isArray(data?.gpus) ? data.gpus : data?.gpus ? [data.gpus] : [], cores: Number(data?.cores) || null, memoryType: data?.memoryType || null, windowsBuild: data?.windowsBuild || null, disk: data?.disk?.name ? data.disk : null };
       return hardwareCache;
     })
     .finally(() => { hardwarePending = null; });

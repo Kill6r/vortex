@@ -10,6 +10,7 @@ import { listWindowsServices } from './services.js';
 import { createHistoryStore } from './history.js';
 import { createOperations } from './operations.js';
 import { createMemoryController } from './memory.js';
+import { createCleanerController } from './cleaner.js';
 import { createGamingController } from './games.js';
 import { createStandbyController } from './standby.js';
 import { runStandbyHelper } from './standby-runner.js';
@@ -129,6 +130,7 @@ app.whenReady().then(() => {
     listProcesses: async () => (await telemetry.snapshot()).groups.flatMap(group => group.entries.filter(isGameProcessCandidate).map(item => ({ ...item, groupCpuPercent: group.cpuPercent, groupMemory: group.memory, ramPercent: group.ramPercent, gpuPercent: group.gpuPercent, processCount: group.count }))) });
   const standby = createStandbyController({ store: settings, canAutomate: () => automaticOptimizations, gameActive: () => Boolean(gaming.status()), runPurge: mode => runStandbyHelper(mode, { packaged: app.isPackaged }) });
   const memory = createMemoryController(() => gaming.status(), { store: settings, telemetry, canAutomate: () => automaticOptimizations });
+  const cleaner = createCleanerController({ isAdmin: async () => (await adminStatus()).enabled === true });
 
   register('optimizer:status', () => ({ enabled: automaticOptimizations }));
   register('optimizer:set-automatic', async (_event, enabled) => {
@@ -210,6 +212,8 @@ app.whenReady().then(() => {
   });
 
   register('system:history', () => history.read());
+  register('cleaner:scan', (_event, force) => cleaner.scan(force === true));
+  register('cleaner:run', (_event, ids, advanced) => cleaner.clean(ids, advanced === true));
   register('memory:snapshot', () => memory.snapshot());
   register('memory:clean', (_event, request) => memory.clean(request));
   register('memory:auto', (_event, configuration) => memory.configureAuto(configuration));

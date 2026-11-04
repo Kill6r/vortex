@@ -26,6 +26,27 @@ jobs:
         run: npm install
       - name: Ejecutar pruebas
         run: npm test
+      - name: Preparar etiqueta de publicacion
+        if: github.ref_type == 'branch'
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          $tag = "v$version"
+          git fetch --tags
+          $existing = git rev-parse --verify "refs/tags/$tag" 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $head = git rev-parse HEAD
+            if ($existing.Trim() -ne $head.Trim()) {
+              throw "La etiqueta $tag ya apunta a otra revision. Incrementa la version."
+            }
+            Write-Host "La etiqueta $tag ya existe"
+          } else {
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag "$tag"
+            git push origin "$tag"
+            if ($LASTEXITCODE -ne 0) { throw "No se pudo publicar la etiqueta $tag" }
+          }
       - name: Publicar instalador y archivos de actualizacion
         run: npm run publish
         env:

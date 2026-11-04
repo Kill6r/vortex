@@ -1,3 +1,12 @@
+# VORTEX v0.83
+
+- Renovar panel principal con seis tarjetas y acentos de color.
+- Eliminar indicadores redundantes del panel lateral.
+- Unir ajustes de Windows y graficos en Tweaks.
+- Agregar Cleaner de seis categorias con protecciones y confirmacion.
+- Compartir telemetria de GPU entre panel y procesos y mejorar la lectura por motor.
+- Conservar el instalador y la configuracion de actualizaciones.
+
 # Cambios
 
 ## v0.82

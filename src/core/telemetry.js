@@ -58,3 +58,17 @@ export function validateMemoryProfileName(value) {
   if (!/^[\p{L}\p{N}_ .()-]{2,42}$/u.test(name)) throw new Error('El perfil debe tener entre 2 y 42 caracteres válidos.');
   return name;
 }
+
+export function parseSystemGpuEngines(items) {
+  if (!Array.isArray(items)) return null;
+  const engines = new Map();
+  for (const row of items) {
+    const name = String(row?.name || '');
+    const match = name.match(/_luid_.+?_phys_\d+_eng_\d+(?:_engtype_[^_]+)?/i);
+    const value = Number(row?.value);
+    if (!match || row?.value === null || row?.value === '' || !Number.isFinite(value) || value < 0) continue;
+    const engine = match[0].toLowerCase();
+    engines.set(engine, (engines.get(engine) || 0) + value);
+  }
+  return engines.size ? Math.min(100, Math.max(...engines.values())) : null;
+}

@@ -28,7 +28,7 @@ export function createLiveMetricsController(dependencies = {}) {
   const gpuSampler = dependencies.gpuSampler || (dependencies.telemetry ? () => dependencies.telemetry.gpuOverview?.() : null);
   const ram = dependencies.ram || (() => ({ total: os.totalmem(), available: os.freemem() }));
   const clock = dependencies.clock || (() => Date.now());
-  const gpuIntervalMs = dependencies.gpuIntervalMs ?? 12000;
+  const gpuIntervalMs = dependencies.gpuIntervalMs ?? 6000;
   let lastCpu = cpuTimes();
   let cached = null;
   let at = -Infinity;

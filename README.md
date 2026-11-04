@@ -1,6 +1,20 @@
-# VORTEX 0.8.2
+# VORTEX 0.8.3
 
 Optimizador de escritorio para Windows 10 y 11. Implementado con JavaScript ES6+, Node.js, Electron, React y PowerShell. Interfaz en español, paneles planos y sin degradados decorativos.
+
+## Nuevo en v0.83 - Cleaner, panel renovado y Tweaks
+
+El panel principal usa tarjetas de color para CPU, GPU, RAM, Windows, almacenamiento y Tweaks. Se eliminaron las tarjetas laterales de deteccion del sistema y memoria en uso. El hardware se consulta a Windows y los campos desconocidos se muestran como no disponibles, nunca como datos inventados.
+
+El porcentaje de GPU se calcula con los contadores de motores de Windows. VORTEX agrupa las lecturas del mismo motor fisico y muestra el motor mas ocupado. CPU y GPU conservan intervalos separados: la GPU se consulta como maximo cada seis segundos y usa una sola muestra compartida con la telemetria de procesos. Si Windows no ofrece contadores utilizables, aparece "No disponible" en lugar de atribuir un 0% ficticio. Las cifras aun pueden diferir de las del Administrador de tareas y requieren pruebas nativas.
+
+**Tweaks** reune las antiguas pantallas de **Ajustes de Windows** y **Graficos y GPU**, con pestañas independientes para cada grupo. HAGS, ReBAR y efectos visuales conservan sus controles anteriores. Seguridad permanece en su propia pagina.
+
+**Cleaner** limpia archivos del disco, por separado de la pagina **Memoria RAM**. Ofrece las mismas seis categorias funcionales del limpiador Sparkle: temporales de Windows y usuario, Prefetch, papelera, descargas de Windows Update, cache de miniaturas e informes de fallos. El codigo de Cleaner esta implementado de manera independiente; no se incluyo codigo GPL ni recursos graficos del repositorio Sparkle.
+
+La pantalla permite analizar tamaños por categoria, seleccionar todos, limpiar los seleccionados, confirmar la eliminacion y revisar los resultados. Prefetch y Windows Update estan clasificados como avanzados y ocultos de forma predeterminada: la eliminacion de Prefetch puede empeorar la experiencia de arranque, y Windows Update se bloquea si hay servicios de actualizacion activos. Las funciones administrativas comprueban permisos y no detienen servicios ni desactivan protecciones. Se omiten enlaces simbolicos y archivos bloqueados cuando Windows no permite borrarlos. Las cifras de espacio disponible son aproximaciones y no implican una mejora de FPS.
+
+Las pruebas automatizadas cubren las operaciones del limpiador y el calculo de uso de GPU. El instalador y las acciones que modifican Windows deben verificarse en un equipo real. El flujo de publicacion prepara la etiqueta de version si se ejecuta manualmente desde la rama principal.
 
 ## Nuevo en v0.81 - Graficos, Windows y seguridad
 
