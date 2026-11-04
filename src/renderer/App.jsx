@@ -7,6 +7,7 @@ import {
   Wrench, X, Zap, DatabaseZap, Trash2, HardDrive, Server, Palette
 } from 'lucide-react';
 import { defaultPreferences, preferenceOptions } from '../core/catalog.js';
+import { percentLabel, memoryUsedTotal, clockLabel } from '../core/overview-display.js';
 import { recommendService, summarizeRecommendations } from '../core/recommendations.js';
 import { preferenceDetails } from '../core/preferences.js';
 import MemoryPage from './MemoryPage.jsx';
@@ -344,7 +345,7 @@ function App() {
           <button className={`header-settings ${page === 'startup' ? 'header-settings-active' : ''}`} onClick={() => goTo('startup')} title="Configuración de VORTEX"><Settings size={17}/><span>Ajustes</span></button>
         </div>
         <div className="header-right">
-          <span className="version-text">VERSIÓN 0.83</span>
+          <span className="version-text">VERSIÓN 0.84</span>
           <button className="refresh-icon" title="Actualizar datos" aria-label="Actualizar datos" disabled={refreshing || busy} onClick={() => refresh()}><RefreshCw size={17} className={refreshing ? 'rotate' : ''}/></button>
           <div className="header-actions" ref={headerMenuRef}>
             <button className="header-menu-trigger" type="button" aria-haspopup="menu" aria-expanded={headerMenuOpen} aria-controls="vortex-actions-menu" onClick={() => setHeaderMenuOpen(open => !open)}><SlidersHorizontal size={16}/><span>Opciones</span><ChevronDown size={15} className={headerMenuOpen ? 'chevron-up' : ''}/></button>
@@ -379,18 +380,18 @@ function App() {
             {page === 'inicio' && <>
               <div className="v83-title"><div><span className="v83-eyebrow">VORTEX · PANEL PRINCIPAL</span><h1>Tu equipo, a tu manera<span>.</span></h1><p>Hardware, rendimiento y herramientas en un solo lugar.</p></div><button className="btn btn-dark" onClick={() => refresh()} disabled={refreshing}><RefreshCw size={16}/> Actualizar</button></div>
               <div className="v83-hardware-grid">
-                <div className="v83-hardware-card v83-blue"><div className="v83-card-top"><span className="v83-card-icon"><Cpu size={20}/></span><span>CPU</span></div><small>Procesador</small><strong>{overview?.cpu || 'No disponible'}</strong><span className="v83-detail">{overview?.cores ? `${overview.cores} nucleos` : `${overview?.threads || '—'} hilos logicos`}</span></div>
-                <div className="v83-hardware-card v83-cyan"><div className="v83-card-top"><span className="v83-card-icon"><Gamepad2 size={20}/></span><span>GPU</span></div><small>Tarjeta grafica</small><strong>{overview?.gpus?.[0] || 'No disponible'}</strong><span className="v83-detail">Uso: {Number.isFinite(live?.gpuUsage) ? `${live.gpuUsage > 0 && live.gpuUsage < 0.1 ? '<0.1' : live.gpuUsage.toFixed(1)}%` : 'sin datos'} · muestra cada 6 s</span></div>
-                <div className="v83-hardware-card v83-purple"><div className="v83-card-top"><span className="v83-card-icon"><MemoryStick size={20}/></span><span>Memoria</span></div><small>RAM instalada</small><strong>{size(overview?.ramTotal)}</strong><span className="v83-detail">{overview?.memoryType || 'Memoria del sistema'}</span></div>
+                <div className="v83-hardware-card v83-blue"><div className="v83-card-top"><span className="v83-card-icon"><Cpu size={20}/></span><span>CPU</span></div><small>Procesador</small><strong>{overview?.cpu || 'No disponible'}</strong><span className="v83-detail">{overview?.cores ? `${overview.cores} nucleos` : `${overview?.threads || '—'} hilos logicos`} · {clockLabel(live?.cpuGHz)}</span></div>
+                <div className="v83-hardware-card v83-cyan"><div className="v83-card-top"><span className="v83-card-icon"><Gamepad2 size={20}/></span><span>GPU</span></div><small>Tarjeta grafica</small><strong>{overview?.gpus?.[0] || 'No disponible'}</strong><span className="v83-detail">Uso: {percentLabel(live?.gpuUsage)} · lectura cada 4 s</span></div>
+                <div className="v83-hardware-card v83-purple"><div className="v83-card-top"><span className="v83-card-icon"><MemoryStick size={20}/></span><span>Memoria</span></div><small>En uso / total</small><strong>{memoryUsedTotal(ramTotal, ramAvailable)}</strong><span className="v83-detail">{overview?.memoryType || 'Memoria del sistema'}</span></div>
                 <div className="v83-hardware-card v83-red"><div className="v83-card-top"><span className="v83-card-icon"><Monitor size={20}/></span><span>Sistema</span></div><small>Sistema operativo</small><strong>{overview?.windows || 'Windows'}</strong><span className="v83-detail">{overview?.windowsBuild || 'Windows 10 / 11'}</span></div>
                 <div className="v83-hardware-card v83-orange"><div className="v83-card-top"><span className="v83-card-icon"><HardDrive size={20}/></span><span>Almacenamiento</span></div><small>Unidad principal</small><strong>{overview?.disk?.name || 'No disponible'}</strong><span className="v83-detail">{overview?.disk?.size ? size(overview.disk.size) : 'Capacidad no disponible'}</span></div>
                 <button className="v83-hardware-card v83-green v83-hardware-action" onClick={() => goTo('tweaks')}><div className="v83-card-top"><span className="v83-card-icon"><Wrench size={20}/></span><span>Tweaks</span><ArrowUpRight size={15} className="v83-arrow"/></div><small>Ajustes de rendimiento</small><strong>Windows y GPU</strong><span className="v83-detail">Animaciones, HAGS, ReBAR y mas</span></button>
               </div>
-              <div className="v83-section-title"><h2>Rendimiento del sistema</h2><small>Datos recientes · la GPU puede diferir del Administrador de tareas</small></div>
+              <div className="v83-section-title"><h2>Rendimiento del sistema</h2><small>Datos recientes · GPU con muestras de los contadores de Windows</small></div>
               <div className="v83-metrics">
-                <div><span><Cpu size={16}/> CPU</span><strong>{Number.isFinite(live?.cpuUsage) ? `${live.cpuUsage.toFixed(1)}%` : '—'}</strong><Bar value={live?.cpuUsage || 0} tone="teal"/></div>
-                <div><span><Gamepad2 size={16}/> GPU</span><strong>{Number.isFinite(live?.gpuUsage) ? live.gpuUsage > 0 && live.gpuUsage < 0.1 ? '<0.1%' : `${live.gpuUsage.toFixed(1)}%` : 'No disponible'}</strong><Bar value={live?.gpuUsage || 0} tone="teal"/></div>
-                <div><span><MemoryStick size={16}/> RAM</span><strong>{ramPercentage}%</strong><Bar value={ramPercentage} tone="teal"/></div>
+                <div><span><Cpu size={16}/> CPU</span><strong>{percentLabel(live?.cpuUsage)}</strong><Bar value={live?.cpuUsage || 0} tone="teal"/></div>
+                <div><span><Gamepad2 size={16}/> GPU</span><strong>{percentLabel(live?.gpuUsage)}</strong><Bar value={live?.gpuUsage || 0} tone="teal"/></div>
+                <div><span><MemoryStick size={16}/> RAM · {ramPercentage}%</span><strong className="v84-ram-readout">{memoryUsedTotal(ramTotal, ramAvailable)}</strong><Bar value={ramPercentage} tone="teal"/></div>
               </div>
               <div className="v83-quick-row"><div><Zap size={20}/><span><strong>¿Quieres optimizar tu equipo?</strong><small>Revisa ajustes recomendados y limpia archivos que no necesitas.</small></span></div><button className="btn btn-dark" onClick={() => goTo('cleaner')}><Trash2 size={15}/> Cleaner</button><button className="btn btn-dark" onClick={() => goTo('tweaks')}><SlidersHorizontal size={15}/> Tweaks</button></div>
             </>}

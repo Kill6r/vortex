@@ -73,6 +73,7 @@ function createWindow() {
     minHeight: 690,
     backgroundColor: '#202020',
     title: 'VORTEX',
+    icon: path.join(currentDirectory, 'assets', 'vortex-logo.png'),
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(currentDirectory, 'preload.cjs'),

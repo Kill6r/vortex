@@ -9,6 +9,10 @@ function getCpuTimes() {
   }, { idle: 0, total: 0 });
 }
 
+export function cpuClockGHz(value) {
+  return Number.isFinite(value) && value > 0 ? value / 1000 : null;
+}
+
 export function calculateSystemCpu(previous, current) {
   if (!previous || !current) return null;
   const total = current.total - previous.total;
@@ -26,9 +30,10 @@ export function calculateGpuOverview(groups, supported) {
 export function createLiveMetricsController(dependencies = {}) {
   const cpuTimes = dependencies.cpuTimes || getCpuTimes;
   const gpuSampler = dependencies.gpuSampler || (dependencies.telemetry ? () => dependencies.telemetry.gpuOverview?.() : null);
+  const cpuSpeed = dependencies.cpuSpeed || (() => os.cpus()[0]?.speed);
   const ram = dependencies.ram || (() => ({ total: os.totalmem(), available: os.freemem() }));
   const clock = dependencies.clock || (() => Date.now());
-  const gpuIntervalMs = dependencies.gpuIntervalMs ?? 6000;
+  const gpuIntervalMs = dependencies.gpuIntervalMs ?? 4000;
   let lastCpu = cpuTimes();
   let cached = null;
   let at = -Infinity;
@@ -52,7 +57,7 @@ export function createLiveMetricsController(dependencies = {}) {
     lastCpu = nextCpu;
     const values = ram();
     at = clock();
-    cached = { cpuUsage, ramTotal: values.total, ramAvailable: values.available, sampledAt: at };
+    cached = { cpuUsage, cpuGHz: cpuClockGHz(cpuSpeed()), ramTotal: values.total, ramAvailable: values.available, sampledAt: at };
     sampleGpu();
     return { ...cached, gpuUsage, gpuEstimated: gpuUsage !== null };
   }

@@ -41,23 +41,42 @@ $items = @(Get-Process | ForEach-Object {
 ConvertTo-Json -InputObject $items -Depth 3 -Compress
 `;
 
-const gpuScript = String.raw`
+export const gpuScript = String.raw`
 $rows = @()
 try {
-  $rows = @(Get-CimInstance -ClassName Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine -ErrorAction Stop | ForEach-Object {
-    [pscustomobject]@{ name = [string]$_.Name; value = [double]$_.UtilizationPercentage }
-  })
-} catch {}
-if ($rows.Count -eq 0) {
-  try {
-    $rows = @(Get-Counter -Counter '\GPU Engine(*)\Utilization Percentage' -ErrorAction Stop | Select-Object -ExpandProperty CounterSamples | ForEach-Object {
+  $readings = @(Get-Counter -Counter '\GPU Engine(*)\Utilization Percentage' -SampleInterval 1 -MaxSamples 2 -ErrorAction Stop)
+  if ($readings.Count -gt 0) {
+    $last = $readings[$readings.Count - 1]
+    $rows = @($last.CounterSamples | ForEach-Object {
       [pscustomobject]@{ name = [string]$_.InstanceName; value = [double]$_.CookedValue }
     })
+  }
+} catch {}
+if ($rows.Count -eq 0 -or @($rows | Where-Object { $_.value -gt 0 }).Count -eq 0) {
+  try {
+    $fallback = @(Get-CimInstance -ClassName Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine -ErrorAction Stop | ForEach-Object {
+      [pscustomobject]@{ name = [string]$_.Name; value = [double]$_.UtilizationPercentage }
+    })
+    if ($rows.Count -eq 0 -or @($fallback | Where-Object { $_.value -gt 0 }).Count -gt 0) { $rows = $fallback }
+  } catch {}
+}
+if ($rows.Count -eq 0 -or @($rows | Where-Object { $_.value -gt 0 }).Count -eq 0) {
+  try {
+    $nvPaths = @((Join-Path $env:SystemRoot 'System32\nvidia-smi.exe'), (Join-Path $env:ProgramFiles 'NVIDIA Corporation\NVSMI\nvidia-smi.exe'))
+    foreach ($exe in $nvPaths) {
+      if (!(Test-Path -LiteralPath $exe -PathType Leaf)) { continue }
+      $values = @(& $exe '--query-gpu=utilization.gpu' '--format=csv,noheader,nounits' 2>$null | ForEach-Object {
+        if ([string]$_ -match '^\s*(\d+)\s*$') { [double]$Matches[1] }
+      })
+      if ($values.Count -gt 0) {
+        $rows += [pscustomobject]@{ name = 'vortex_nvidia_total'; value = [double](@($values | Measure-Object -Maximum)[0].Maximum) }
+      }
+      break
+    }
   } catch {}
 }
 ConvertTo-Json -InputObject $rows -Compress -Depth 2
 `;
-
 export function createTelemetryController(dependencies = {}) {
   const query = dependencies.query || executeJson;
   const clock = dependencies.clock || (() => Date.now());
@@ -72,7 +91,7 @@ export function createTelemetryController(dependencies = {}) {
   let gpuSupported = null;
   let gpuOverviewValue = null;
   let gpuPending = null;
-  const gpuIntervalMs = dependencies.gpuIntervalMs ?? 6000;
+  const gpuIntervalMs = dependencies.gpuIntervalMs ?? 4000;
 
   async function refreshGpu() {
     if (gpuPending) return gpuPending;

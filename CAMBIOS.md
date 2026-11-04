@@ -1,3 +1,11 @@
+# VORTEX v0.84
+
+- Panel con porcentajes enteros, RAM usada / total y GHz del procesador.
+- GPU: Get-Counter con dos muestras, respaldo CIM y consulta cada 4 segundos.
+- Tweaks vertical: Windows y graficos se muestran al desplazarse.
+- Nuevo rayo de VORTEX en el Setup, la ventana, la bandeja y el favicon.
+- Pruebas nuevas para lectura y formato de las metricas.
+
 # VORTEX v0.83
 
 - Renovar panel principal con seis tarjetas y acentos de color.

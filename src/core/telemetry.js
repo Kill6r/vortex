@@ -62,13 +62,20 @@ export function validateMemoryProfileName(value) {
 export function parseSystemGpuEngines(items) {
   if (!Array.isArray(items)) return null;
   const engines = new Map();
+  let nvidiaUsage = null;
   for (const row of items) {
     const name = String(row?.name || '');
-    const match = name.match(/_luid_.+?_phys_\d+_eng_\d+(?:_engtype_[^_]+)?/i);
     const value = Number(row?.value);
-    if (!match || row?.value === null || row?.value === '' || !Number.isFinite(value) || value < 0) continue;
+    if (row?.value === null || row?.value === '' || !Number.isFinite(value) || value < 0) continue;
+    if (name === 'vortex_nvidia_total') {
+      nvidiaUsage = Math.max(nvidiaUsage ?? 0, value);
+      continue;
+    }
+    const match = name.match(/_luid_.+?_phys_\d+_eng_\d+(?:_engtype_[^_]+)?/i);
+    if (!match) continue;
     const engine = match[0].toLowerCase();
     engines.set(engine, (engines.get(engine) || 0) + value);
   }
-  return engines.size ? Math.min(100, Math.max(...engines.values())) : null;
+  if (!engines.size && nvidiaUsage === null) return null;
+  return Math.min(100, Math.max(nvidiaUsage ?? 0, ...engines.values()));
 }

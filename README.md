@@ -1,6 +1,14 @@
-# VORTEX 0.8.3
+# VORTEX 0.8.4
 
 Optimizador de escritorio para Windows 10 y 11. Implementado con JavaScript ES6+, Node.js, Electron, React y PowerShell. Interfaz en español, paneles planos y sin degradados decorativos.
+
+## Nuevo en v0.84 - Lecturas del panel, Tweaks y logo
+
+El panel principal ahora muestra porcentajes sin decimales y RAM usada / RAM total con un decimal y coma, por ejemplo `12,0 / 15,6 GB`. También muestra la frecuencia del procesador reportada por Node.js en GHz; su valor no garantiza coincidir con la frecuencia instantanea de boost de Windows.
+
+La lectura de GPU prioriza dos muestras de los contadores de rendimiento de Windows (`Get-Counter`) y recurre a CIM si no se obtienen datos validos o ambos valores son cero. La tasa de refresco de GPU pasa de 6 a 4 segundos. Una GPU sin contadores validos se muestra como «No disponible» en vez de reportar 0 de forma ficticia. Los porcentajes pueden diferir del Administrador de tareas por el intervalo de muestreo o el controlador; verificar en Windows antes de prometer exactitud.
+
+En Tweaks, los ajustes de Windows y GPU estan en la misma pagina, uno tras otro al desplazar hacia abajo. Los enlaces superiores solo desplazan la vista, sin ocultar ninguna seccion. El ejecutable, la ventana, el icono de bandeja y el favicon utilizan un rayo consistente con la marca VORTEX y sustituyen el icono predeterminado de Electron/React.
 
 ## Nuevo en v0.83 - Cleaner, panel renovado y Tweaks
 
