@@ -10,6 +10,23 @@ function Message({ message }) {
   return message ? <div className={`vt-notice ${message.error ? 'vt-error' : ''}`}>{message.text}</div> : null;
 }
 
+function Status({ enabled, requested = false }) {
+  const label = enabled === null || enabled === undefined ? 'No verificado' : enabled ? 'Activado' : 'Desactivado';
+  const color = enabled === null || enabled === undefined ? 'unknown' : enabled ? 'on' : 'off';
+  return <span className={`vt-status vt-status-${color}`} aria-live="polite"><span className="vt-status-dot"/>{requested ? 'Configurado: ' : ''}{label}</span>;
+}
+
+function Choice({ enabled, change, busy, refresh, refreshBusy = false, restore = null }) {
+  return <div className="vt-actions vt-choice-actions">
+    <div className="vt-choice-group" role="group" aria-label="Estado del ajuste">
+      <button type="button" className={`vt-choice vt-choice-off ${enabled === false ? 'vt-choice-selected' : ''}`} aria-pressed={enabled === false} disabled={busy || enabled === false} onClick={() => change(false)}>Desactivar</button>
+      <button type="button" className={`vt-choice vt-choice-on ${enabled === true ? 'vt-choice-selected' : ''}`} aria-pressed={enabled === true} disabled={busy || enabled === true} onClick={() => change(true)}>Activar</button>
+    </div>
+    {refresh ? <button className="vt-icon vt-refresh-icon" type="button" title="Volver a comprobar en Windows" aria-label="Actualizar estado" disabled={busy || refreshBusy} onClick={refresh}><RefreshCw size={16} className={refreshBusy ? 'rotate' : ''}/></button> : null}
+    {restore ? <button className="vt-icon" type="button" title="Restaurar valor original" aria-label="Restaurar valor original" disabled={busy} onClick={restore}><RotateCcw size={16}/></button> : null}
+  </div>;
+}
+
 export function WindowsTweaksPage({ api }) {
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -40,8 +57,8 @@ export function WindowsTweaksPage({ api }) {
     <Message message={notice}/>
     <Section title="Efectos visuales" description="Los cambios se aplican al perfil actual de Windows, no a todos los usuarios.">
       {Object.entries(visualSettings).map(([key, item]) => <div className="vt-row" key={key}>
-        <div><strong>{item.title}</strong><small>{item.description}</small><span className="vt-status">{state?.[key] === null || state?.[key] === undefined ? 'Estado no determinado' : state[key] ? 'Activado' : 'Desactivado'}</span></div>
-        <div className="vt-actions"><button className="btn btn-dark" disabled={busy} onClick={() => change(key, false)}>Desactivar</button><button className="btn btn-dark" disabled={busy} onClick={() => change(key, true)}>Activar</button><button className="vt-icon" title="Restaurar valor original" disabled={busy} onClick={() => restore(key)}><RotateCcw size={16}/></button></div>
+        <div className="vt-row-description"><strong>{item.title}</strong><small>{item.description}</small><Status enabled={state?.[key]}/></div>
+        <Choice enabled={state?.[key]} change={enabled => change(key, enabled)} busy={busy} restore={() => restore(key)}/>
       </div>)}
     </Section>
     <Section title="Opciones de rendimiento" description="Windows permite ajustar otros efectos de forma individual.">
@@ -56,7 +73,13 @@ export function GraphicsPage({ api }) {
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null);
-  async function refresh() { try { setStatus(await api.graphicsStatus()); } catch (error) { setNotice({ error: true, text: error.message }); } }
+  const [refreshBusy, setRefreshBusy] = useState(false);
+  async function refresh() {
+    setRefreshBusy(true);
+    try { setStatus(await api.graphicsStatus()); setNotice(null); }
+    catch (error) { setNotice({ error: true, text: error.message }); }
+    finally { setRefreshBusy(false); }
+  }
   useEffect(() => { void refresh(); }, []);
   async function hags(enabled) {
     if (!window.confirm(`¿Quieres ${enabled ? 'solicitar la activacion' : 'solicitar la desactivacion'} de HAGS? Es necesario reiniciar Windows. Puede no ser compatible con tu hardware.`)) return;
@@ -65,24 +88,25 @@ export function GraphicsPage({ api }) {
     catch (error) { setNotice({ error: true, text: error.message }); }
     finally { setBusy(false); }
   }
-  async function restoreHags() {
-    if (!window.confirm('Restaurar el valor original de HAGS? Sera necesario reiniciar Windows.')) return;
-    setBusy(true);
-    try { await api.restoreHags(); setNotice({ text: 'Valor original de HAGS restaurado. Reinicia el equipo.' }); await refresh(); }
-    catch (error) { setNotice({ error: true, text: error.message }); }
-    finally { setBusy(false); }
-  }
   return <div className="vt-wrap"><div className="page-heading"><div><h1>Graficos y GPU</h1><p>Opciones del controlador y del sistema, con verificacion de compatibilidad.</p></div><button className="btn btn-dark" onClick={refresh}><RefreshCw size={15}/> Actualizar</button></div>
     <Message message={notice}/>
-    <Section title="Programacion de GPU acelerada por hardware (HAGS)" description="Este ajuste depende de Windows, del controlador y de la GPU.">
-      <div className="vt-row"><div><strong>Estado solicitado</strong><small>{status?.hags === 'solicitado-activado' ? 'Activado en el registro. Pendiente de confirmar tras reiniciar.' : status?.hags === 'solicitado-desactivado' ? 'Desactivado en el registro. Pendiente de confirmar tras reiniciar.' : 'Controlado por Windows o sin valor explicito.'}</small><span className="vt-status">No confirma compatibilidad ni estado efectivo</span></div><div className="vt-actions"><button className="btn btn-dark" disabled={busy} onClick={() => hags(false)}>Desactivar</button><button className="btn btn-dark" disabled={busy} onClick={() => hags(true)}>Activar</button><button className="vt-icon" disabled={busy} title="Restaurar HAGS" onClick={restoreHags}><RotateCcw size={16}/></button></div></div>
-      <div className="vt-row"><div><strong>Comprobar en Windows</strong><small>Verifica si HAGS esta disponible y activo en la configuracion grafica de Windows.</small></div><button className="btn btn-dark" onClick={() => api.openSystemSetting('graphics')}><ExternalLink size={15}/> Abrir ajustes</button></div>
+    <Section title="Programacion de GPU acelerada por hardware (HAGS)" description="Lectura del registro de Windows. El efecto real depende del controlador y de reiniciar el equipo.">
+      <div className="vt-row vt-row-hags">
+        <div className="vt-row-description">
+          <strong>Estado de HAGS</strong>
+          <small>{status?.hagsNote || 'Consultando el estado en Windows...'}</small>
+          <Status enabled={status?.hagsValue === 2 ? true : status?.hagsValue === 1 ? false : null} requested/>
+          {status?.hagsPendingRestart && <span className="vt-pending">Reinicio pendiente</span>}
+        </div>
+        <Choice enabled={status?.hagsValue === 2 ? true : status?.hagsValue === 1 ? false : null} change={hags} busy={busy} refresh={refresh} refreshBusy={refreshBusy}/>
+      </div>
+      <div className="vt-row"><div><strong>Comprobacion del estado efectivo</strong><small>Actualizar vuelve a leer el ajuste configurado. Para saber si el controlador lo ha aplicado, consulta tambien la configuracion grafica de Windows.</small></div><button className="btn btn-dark" onClick={() => api.openSystemSetting('graphics')}><ExternalLink size={15}/> Abrir en Windows</button></div>
     </Section>
-    <Section title="Resizable BAR (ReBAR)" description="ReBAR se controla normalmente desde BIOS/UEFI y requiere soporte de GPU, placa, firmware y controlador.">
-      <div className="vt-row"><div><strong>Estado de ReBAR</strong><small>{status?.rebar?.description || 'Consultando compatibilidad...'}</small><span className="vt-status">No verificado desde VORTEX</span></div></div>
+    <Section title="Resizable BAR (ReBAR)" description="VORTEX consulta los recursos PCI asignados a la GPU directamente desde Windows, sin abrir NVIDIA.">
+      <div className="vt-row"><div className="vt-row-description"><strong>Estado de ReBAR</strong><small>{status?.rebar?.description || 'Consultando recursos PCI...'}</small><span className={`vt-status ${status?.rebar?.state === 'possible-enabled' ? 'vt-status-indicative' : 'vt-status-unknown'}`}>{status?.rebar?.state === 'possible-enabled' ? 'Posiblemente activo' : 'No se pudo verificar'}</span><span className="vt-source">Fuente: {status?.rebar?.source || 'Windows'} · {status?.rebar?.adapter || 'GPU'}</span></div><button className="vt-icon vt-refresh-icon" title="Volver a comprobar ReBAR" aria-label="Actualizar ReBAR" disabled={refreshBusy || busy} onClick={refresh}><RefreshCw size={16} className={refreshBusy ? 'rotate' : ''}/></button></div>
       <div className="vt-row"><div><strong>GPU detectadas</strong><small>{status?.gpus?.join(', ') || 'Sin informacion disponible'}</small></div></div>
     </Section>
-    <div className="vt-hint"><AlertTriangle size={17}/> No hay un interruptor universal y fiable para ReBAR desde Windows. No vamos a modificar la BIOS ni a inventar un estado activo.</div>
+    <div className="vt-hint"><AlertTriangle size={17}/> Un rango PCI grande es una pista de ReBAR, no una confirmacion definitiva. VORTEX no altera BIOS, UEFI ni firmware.</div>
   </div>;
 }
 

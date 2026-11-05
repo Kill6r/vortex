@@ -1,6 +1,18 @@
-# VORTEX 0.8.4
+# VORTEX 0.8.5
 
 Optimizador de escritorio para Windows 10 y 11. Implementado con JavaScript ES6+, Node.js, Electron, React y PowerShell. Interfaz en español, paneles planos y sin degradados decorativos.
+
+## Nuevo en v0.85 - Estados claros, ReBAR y HAGS
+
+**Tweaks** diferencia el ajuste actual con un boton verde cuando esta activado y rojo cuando esta desactivado. La opcion contraria queda neutral. Los estados no detectados se muestran en gris y nunca se presentan como activos. Se reforzo el contraste entre secciones, filas y tarjetas para facilitar la lectura.
+
+En **Graficos y GPU**, el boton situado junto a HAGS ahora sirve para **Actualizar estado**, en vez de restaurar el registro. VORTEX vuelve a consultar el valor de `HwSchMode` y avisa si hay un reinicio pendiente tras haber cambiado ese valor desde la aplicacion. El valor del registro indica lo que se ha solicitado a Windows, pero no prueba que el hardware y controlador lo esten aplicando realmente. Abrir la configuracion oficial sigue disponible como comprobacion adicional.
+
+Para **ReBAR**, VORTEX intenta leer directamente los rangos de memoria PCI asignados al adaptador grafico mediante WMI en Windows, sin abrir ninguna aplicacion de NVIDIA. Un rango grande permite indicar **Posiblemente activo**; si el sistema no expone datos suficientes, se indica **No se pudo verificar**, y nunca se fuerza una conclusion de activado o desactivado. Se puede actualizar desde la misma pantalla. La funcionalidad no altera la BIOS ni instala controladores.
+
+**Ajustes** se ubica en el menu lateral izquierdo. El panel principal da prioridad al dato de GHz de Node.js y consulta tambien la frecuencia publicada por `Win32_Processor` cuando no dispone de esa lectura. El dato puede representar la frecuencia reportada por el sistema, no necesariamente el boost instantaneo de cada nucleo.
+
+La logica automatizada pasa las pruebas de Node.js y la sintaxis JSX se valido; los resultados de ReBAR y HAGS requieren pruebas nativas en Windows 10/11 con diferentes controladores y hardware antes de confirmar su precision universal.
 
 ## Nuevo en v0.84 - Lecturas del panel, Tweaks y logo
 

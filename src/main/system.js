@@ -47,12 +47,14 @@ if ($modules.Count -gt 0) {
  windowsBuild = [string]$win.Version
  gpus = $gpus
  cores = [int](@($cpu | Measure-Object -Property NumberOfCores -Sum)[0].Sum)
+ currentClockMHz = $(if ($cpu.Count -gt 0) { [int]$cpu[0].CurrentClockSpeed } else { 0 })
+ maxClockMHz = $(if ($cpu.Count -gt 0) { [int]$cpu[0].MaxClockSpeed } else { 0 })
  memoryType = $memoryLabel
  disk = $(if ($disk.Count -gt 0) { [pscustomobject]@{name=[string]$disk[0].Model; size=[int64]$disk[0].Size} } else {$null})
 } | ConvertTo-Json -Compress -Depth 5
 ` )
     .then(data => {
-      hardwareCache = { windows: data?.windows || `Windows ${os.release()}`, gpus: Array.isArray(data?.gpus) ? data.gpus : data?.gpus ? [data.gpus] : [], cores: Number(data?.cores) || null, memoryType: data?.memoryType || null, windowsBuild: data?.windowsBuild || null, disk: data?.disk?.name ? data.disk : null };
+      hardwareCache = { windows: data?.windows || `Windows ${os.release()}`, gpus: Array.isArray(data?.gpus) ? data.gpus : data?.gpus ? [data.gpus] : [], cores: Number(data?.cores) || null, currentClockMHz: Number(data?.currentClockMHz) || null, maxClockMHz: Number(data?.maxClockMHz) || null, memoryType: data?.memoryType || null, windowsBuild: data?.windowsBuild || null, disk: data?.disk?.name ? data.disk : null };
       return hardwareCache;
     })
     .finally(() => { hardwarePending = null; });

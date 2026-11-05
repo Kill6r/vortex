@@ -1,3 +1,12 @@
+# VORTEX v0.85
+
+- Mejorar contraste, separacion de secciones y seleccion de ajustes en Tweaks.
+- Resaltar en verde los estados activados y en rojo los desactivados.
+- Cambiar el boton de restaurar HAGS por uno para actualizar y verificar el valor guardado.
+- Consultar ReBAR a traves de recursos PCI de Windows, con resultado indicativo o no verificable.
+- Mostrar Ajustes en el menu lateral y mejorar el dato de GHz con respaldo de WMI.
+- Conservar actualizaciones automaticas y perfiles de usuario.
+
 # VORTEX v0.84
 
 - Panel con porcentajes enteros, RAM usada / total y GHz del procesador.

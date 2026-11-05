@@ -28,7 +28,8 @@ const navigation = [
   { id: 'reglas', label: 'Reglas de procesos', icon: BookMarked },
   { id: 'tweaks', label: 'Tweaks', icon: SlidersHorizontal },
   { id: 'seguridad', label: 'Seguridad', icon: ShieldCheck },
-  { id: 'historial', label: 'Historial', icon: FileClock }
+  { id: 'historial', label: 'Historial', icon: FileClock },
+  { id: 'startup', label: 'Ajustes', icon: Settings }
 ];
 
 const labels = {
@@ -342,16 +343,14 @@ function App() {
       <header className="global-header">
         <div className="header-left">
           <button className="logo" onClick={() => goTo('inicio')} aria-label="VORTEX, inicio"><span className="logo-symbol"><Zap size={23} fill="currentColor"/></span><strong>VORTEX</strong><span className="logo-mini">OPTIMIZER</span></button>
-          <button className={`header-settings ${page === 'startup' ? 'header-settings-active' : ''}`} onClick={() => goTo('startup')} title="Configuración de VORTEX"><Settings size={17}/><span>Ajustes</span></button>
         </div>
         <div className="header-right">
-          <span className="version-text">VERSIÓN 0.84</span>
+          <span className="version-text">VERSIÓN 0.85</span>
           <button className="refresh-icon" title="Actualizar datos" aria-label="Actualizar datos" disabled={refreshing || busy} onClick={() => refresh()}><RefreshCw size={17} className={refreshing ? 'rotate' : ''}/></button>
           <div className="header-actions" ref={headerMenuRef}>
             <button className="header-menu-trigger" type="button" aria-haspopup="menu" aria-expanded={headerMenuOpen} aria-controls="vortex-actions-menu" onClick={() => setHeaderMenuOpen(open => !open)}><SlidersHorizontal size={16}/><span>Opciones</span><ChevronDown size={15} className={headerMenuOpen ? 'chevron-up' : ''}/></button>
             {headerMenuOpen && <div className="header-actions-menu" id="vortex-actions-menu" role="menu" aria-label="Opciones de VORTEX">
               <div className="header-actions-caption">ACCIONES RÁPIDAS</div>
-              <button role="menuitem" onClick={() => goTo('startup')}><Settings size={16}/><span>Ajustes e inicio con Windows</span></button>
               <button role="menuitem" onClick={() => goTo('servicios')}><ListFilter size={16}/><span>Administrar servicios</span></button>
               <button role="menuitem" onClick={() => goTo('memoria')}><MemoryStick size={16}/><span>Limpiar memoria</span></button>
               <button role="menuitem" onClick={() => goTo('cleaner')}><Trash2 size={16}/><span>Cleaner de archivos</span></button>
@@ -368,7 +367,7 @@ function App() {
         </div>
       </header>
       <aside className="sidebar">
-        <div className="side-group"><span>HERRAMIENTAS</span>{navigation.map(item => navigationButton(item))}</div>
+        <div className="side-group"><span>HERRAMIENTAS</span>{navigation.filter(item => item.id !== 'startup').map(item => navigationButton(item))}<div className="v85-sidebar-settings"><span>CONFIGURACION</span>{navigation.filter(item => item.id === 'startup').map(item => navigationButton(item))}</div></div>
         
         <div className="side-bottom"><span>VORTEX / DESKTOP</span><span>WINDOWS 10 — 11</span></div>
       </aside>
@@ -380,7 +379,7 @@ function App() {
             {page === 'inicio' && <>
               <div className="v83-title"><div><span className="v83-eyebrow">VORTEX · PANEL PRINCIPAL</span><h1>Tu equipo, a tu manera<span>.</span></h1><p>Hardware, rendimiento y herramientas en un solo lugar.</p></div><button className="btn btn-dark" onClick={() => refresh()} disabled={refreshing}><RefreshCw size={16}/> Actualizar</button></div>
               <div className="v83-hardware-grid">
-                <div className="v83-hardware-card v83-blue"><div className="v83-card-top"><span className="v83-card-icon"><Cpu size={20}/></span><span>CPU</span></div><small>Procesador</small><strong>{overview?.cpu || 'No disponible'}</strong><span className="v83-detail">{overview?.cores ? `${overview.cores} nucleos` : `${overview?.threads || '—'} hilos logicos`} · {clockLabel(live?.cpuGHz)}</span></div>
+                <div className="v83-hardware-card v83-blue"><div className="v83-card-top"><span className="v83-card-icon"><Cpu size={20}/></span><span>CPU</span></div><small>Procesador</small><strong>{overview?.cpu || 'No disponible'}</strong><span className="v83-detail">{overview?.cores ? `${overview.cores} nucleos` : `${overview?.threads || '—'} hilos logicos`} · {clockLabel(live?.cpuGHz || (overview?.currentClockMHz ? overview.currentClockMHz / 1000 : null) || (overview?.maxClockMHz ? overview.maxClockMHz / 1000 : null))}</span></div>
                 <div className="v83-hardware-card v83-cyan"><div className="v83-card-top"><span className="v83-card-icon"><Gamepad2 size={20}/></span><span>GPU</span></div><small>Tarjeta grafica</small><strong>{overview?.gpus?.[0] || 'No disponible'}</strong><span className="v83-detail">Uso: {percentLabel(live?.gpuUsage)} · lectura cada 4 s</span></div>
                 <div className="v83-hardware-card v83-purple"><div className="v83-card-top"><span className="v83-card-icon"><MemoryStick size={20}/></span><span>Memoria</span></div><small>En uso / total</small><strong>{memoryUsedTotal(ramTotal, ramAvailable)}</strong><span className="v83-detail">{overview?.memoryType || 'Memoria del sistema'}</span></div>
                 <div className="v83-hardware-card v83-red"><div className="v83-card-top"><span className="v83-card-icon"><Monitor size={20}/></span><span>Sistema</span></div><small>Sistema operativo</small><strong>{overview?.windows || 'Windows'}</strong><span className="v83-detail">{overview?.windowsBuild || 'Windows 10 / 11'}</span></div>
@@ -389,7 +388,7 @@ function App() {
               </div>
               <div className="v83-section-title"><h2>Rendimiento del sistema</h2><small>Datos recientes · GPU con muestras de los contadores de Windows</small></div>
               <div className="v83-metrics">
-                <div><span><Cpu size={16}/> CPU</span><strong>{percentLabel(live?.cpuUsage)}</strong><Bar value={live?.cpuUsage || 0} tone="teal"/></div>
+                <div><span><Cpu size={16}/> CPU · {clockLabel(live?.cpuGHz || (overview?.currentClockMHz ? overview.currentClockMHz / 1000 : null) || (overview?.maxClockMHz ? overview.maxClockMHz / 1000 : null))}</span><strong>{percentLabel(live?.cpuUsage)}</strong><Bar value={live?.cpuUsage || 0} tone="teal"/></div>
                 <div><span><Gamepad2 size={16}/> GPU</span><strong>{percentLabel(live?.gpuUsage)}</strong><Bar value={live?.gpuUsage || 0} tone="teal"/></div>
                 <div><span><MemoryStick size={16}/> RAM · {ramPercentage}%</span><strong className="v84-ram-readout">{memoryUsedTotal(ramTotal, ramAvailable)}</strong><Bar value={ramPercentage} tone="teal"/></div>
               </div>

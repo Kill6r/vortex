@@ -8,7 +8,7 @@ test('la navegación ofrece Limpiar memoria sin una sección standby duplicada',
   const app = read('App.jsx');
   assert.match(app, /label: 'Memoria RAM'/);
   assert.doesNotMatch(app, /id: 'standby'/);
-  assert.match(app, /VERSIÓN 0\.84/);
+  assert.match(app, /VERSIÓN 0\.85/);
 });
 
 test('la limpieza principal es conservadora y el vaciado completo requiere un diálogo', () => {

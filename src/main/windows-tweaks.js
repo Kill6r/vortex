@@ -1,6 +1,9 @@
 import { executeJson } from './powershell.js';
 import { visualSettings, validateVisualChoice, validateStartupIo, ioRegistryValues, ioLevelFromRegistry, describeRebar } from '../core/windows-tweaks.js';
 import { getHardwareDetails } from './system.js';
+import { readRebarResources } from './rebar-probe.js';
+import { summarizeRebarResources } from '../core/rebar-status.js';
+import os from 'node:os';
 
 const visualRegistry = {
   animations: String.raw`HKCU:\Control Panel\Desktop\WindowMetrics`,
@@ -50,15 +53,24 @@ export async function restoreVisualSetting(key, settings, execute = executeJson)
   return { key, restored: true };
 }
 
-export async function readGraphicsStatus(execute = executeJson, hardware = getHardwareDetails) {
-  const data = await execute(`$item = Get-ItemProperty -LiteralPath '${graphicKey}' -Name HwSchMode -ErrorAction SilentlyContinue; [pscustomobject]@{ registryValue = $(if ($null -eq $item) { $null } else { [int]$item.HwSchMode }) } | ConvertTo-Json -Compress`);
-  const details = await hardware();
+export async function readGraphicsStatus(execute = executeJson, hardware = getHardwareDetails, rebarProbe = readRebarResources, settings = null) {
+  const [data, details, probe] = await Promise.all([
+    execute(`$item = Get-ItemProperty -LiteralPath '${graphicKey}' -Name HwSchMode -ErrorAction SilentlyContinue; [pscustomobject]@{ registryValue = $(if ($null -eq $item) { $null } else { [int]$item.HwSchMode }) } | ConvertTo-Json -Compress`),
+    hardware(),
+    rebarProbe()
+  ]);
+  const lastChange = settings?.read()?.hagsLastChange;
+  const bootTime = Date.now() - os.uptime() * 1000;
+  const pendingRestart = Number.isFinite(lastChange) && lastChange > bootTime;
+  const hags = data?.registryValue === 2 ? 'solicitado-activado' : data?.registryValue === 1 ? 'solicitado-desactivado' : 'controlado-por-windows';
   return {
-    hags: data?.registryValue === 2 ? 'solicitado-activado' : data?.registryValue === 1 ? 'solicitado-desactivado' : 'controlado-por-windows',
+    hags,
     hagsValue: data?.registryValue ?? null,
-    hagsNote: 'Este valor del registro no confirma que la GPU y el controlador admitan HAGS. Comprueba el ajuste efectivo en Configuracion de Windows y reinicia.',
-    rebar: describeRebar(details?.gpus || []),
-    gpus: details?.gpus || []
+    hagsPendingRestart: pendingRestart,
+    hagsNote: pendingRestart ? 'Valor guardado. Reinicia Windows para solicitar que surta efecto.' : 'Lectura actual del registro. Windows y el controlador determinan si HAGS funciona realmente.',
+    rebar: summarizeRebarResources(probe, details?.gpus || []),
+    gpus: details?.gpus || [],
+    checkedAt: Date.now()
   };
 }
 
@@ -72,6 +84,7 @@ export async function changeHags(enabled, settings, execute = executeJson) {
   await execute(`New-ItemProperty -Path '${graphicKey}' -Name HwSchMode -Value ${next} -PropertyType DWord -Force | Out-Null; [pscustomobject]@{ changed = $true } | ConvertTo-Json -Compress`);
   const actual = await read();
   if (actual !== next) throw new Error('Windows no confirmo el valor solicitado.');
+  settings.write({ hagsLastChange: Date.now() });
   return { requested: enabled, verifiedRegistry: true, effectiveVerified: false, requiresRestart: true };
 }
 
