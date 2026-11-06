@@ -1,3 +1,4 @@
 export function windowSettings(value = {}) {
-  return { minimizeToTray: value?.minimizeToTray !== false };
+  const closeToTray = typeof value?.closeToTray === 'boolean' ? value.closeToTray : value?.minimizeToTray !== false;
+  return { closeToTray };
 }

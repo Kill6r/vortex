@@ -1,3 +1,15 @@
+# Cambios de VORTEX
+
+## 0.86
+
+- Correccion del estado efectivo de HAGS por consulta al controlador WDDM.
+- Nueva lectura de BAR1 de NVIDIA y respaldo con recursos PCI para ReBAR.
+- Una sola cabecera integrada con los botones de ventana.
+- Minimizar a la barra de tareas y cerrar con X a la bandeja.
+- Trece tweaks adicionales con restauracion individual de los valores guardados.
+- Mejora de textos y estados verificables.
+- Version actualizada a 0.86.
+
 # VORTEX v0.85
 
 - Mejorar contraste, separacion de secciones y seleccion de ajustes en Tweaks.

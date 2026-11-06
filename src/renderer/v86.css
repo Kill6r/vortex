@@ -1,0 +1,25 @@
+.global-header{-webkit-app-region:drag;user-select:none;min-height:70px!important}
+.global-header button,.global-header .header-right,.global-header .v86-window-controls,.global-header .header-actions-menu{-webkit-app-region:no-drag}
+.header-right{display:flex;align-items:center}
+.v86-window-controls{height:70px;display:flex;align-items:center;margin-left:8px;gap:0;border-left:1px solid #2d4058;padding-left:7px}
+.v86-window-controls button{height:42px;width:46px;display:flex;align-items:center;justify-content:center;border:0;border-radius:5px;background:transparent;color:#c8d5e6;cursor:pointer}
+.v86-window-controls button:hover{background:#2d4059;color:#fff}
+.v86-window-controls .v86-close-window:hover{background:#b52b3b;color:#fff}
+.v86-extra{display:flex;flex-direction:column;gap:14px;margin-bottom:28px}
+.v86-extra-top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.v86-extra-top h2{font-size:17px;color:#edf5ff;margin:0 0 7px}
+.v86-extra-top p{font-size:11px;color:#a8bcd3;margin:0;line-height:1.5}
+.v86-extra-category{display:flex;align-items:center;gap:10px;padding:15px 18px;color:#74dfcf;background:#1a3244;border:1px solid #35546a;border-bottom:0;border-radius:9px 9px 0 0}
+.v86-extra-category h3{font-size:13px;margin:0;color:#e4f4fa}
+.v86-extra-list{border:1px solid #344b61;border-radius:0 0 9px 9px;overflow:hidden}
+.v86-extra-row{display:flex;justify-content:space-between;align-items:center;gap:20px;background:#16263a;padding:17px 19px;border-bottom:1px solid #304359}
+.v86-extra-row:last-child{border-bottom:0}
+.v86-extra-row:nth-child(even){background:#1b2b3f}
+.v86-extra-copy{flex:1;min-width:0}
+.v86-extra-copy strong{display:block;font-size:12px;color:#f1f7fd}
+.v86-extra-copy p{margin:6px 0 0;font-size:11px;line-height:1.5;color:#afc0d6}
+.v86-extra-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.v86-extra-actions .vt-icon{min-width:38px;height:41px;display:grid;place-items:center;background:#283e54;color:#b6cce2;border:1px solid #3d5972;border-radius:6px;cursor:pointer}
+.v86-extra-actions button:disabled{cursor:default}
+.v86-extra-group{margin-bottom:5px}
+@media(max-width:1150px){.v86-extra-row{flex-direction:column;align-items:stretch}.v86-extra-actions{justify-content:flex-end}.v86-window-controls button{width:36px}}

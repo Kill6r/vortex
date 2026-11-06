@@ -22,12 +22,14 @@ import { isGameProcessCandidate } from '../core/game-discovery.js';
 import { getStartupStatus, setStartupStatus } from './startup.js';
 import { windowSettings } from '../core/window-settings.js';
 import { readVisualSettings, changeVisualSetting, restoreVisualSetting, readGraphicsStatus, changeHags, restoreHags, readStartupIoRule, changeStartupIoRule, restoreStartupIoRule, readSecurityStatus } from './windows-tweaks.js';
+import { readExtraTweaks, setExtraTweak, restoreExtraTweak } from './extra-tweaks.js';
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 let mainWindow = null;
 let tray = null;
 let storedSettings = null;
-let minimizeToTray = true;
+let closeToTray = true;
+let allowQuit = false;
 let updates = null;
 
 function register(channel, handler) {
@@ -57,7 +59,7 @@ function setupTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: 'Abrir VORTEX', click: revealWindow },
     { type: 'separator' },
-    { label: 'Salir', click: () => app.quit() }
+    { label: 'Salir de VORTEX', click: () => { allowQuit = true; app.quit(); } }
   ]));
   tray.on('double-click', revealWindow);
   tray.on('click', revealWindow);
@@ -67,6 +69,8 @@ function setupTray() {
 function createWindow() {
   const window = new BrowserWindow({
     show: false,
+    frame: false,
+    thickFrame: true,
     width: 1440,
     height: 900,
     minWidth: 1080,
@@ -94,8 +98,8 @@ function createWindow() {
       window.show();
     }
   });
-  window.on('minimize', event => {
-    if (!minimizeToTray || !tray) return;
+  window.on('close', event => {
+    if (allowQuit || app.isQuittingAfterRestore || !closeToTray || !tray) return;
     event.preventDefault();
     window.hide();
   });
@@ -116,7 +120,7 @@ app.whenReady().then(() => {
   const settings = createSettingsStore(app.getPath('userData'));
   let automaticOptimizations = settings.read().automaticOptimizations === true;
   storedSettings = settings;
-  minimizeToTray = windowSettings(settings.read().window).minimizeToTray;
+  closeToTray = windowSettings(settings.read().window).closeToTray;
   setupTray();
   const telemetry = createTelemetryController();
   const liveMetrics = createLiveMetricsController({ telemetry });
@@ -149,9 +153,28 @@ app.whenReady().then(() => {
   register('window:settings', () => windowSettings(storedSettings.read().window));
   register('window:settings-set', (_event, value) => {
     const next = windowSettings(value);
-    minimizeToTray = next.minimizeToTray;
+    closeToTray = next.closeToTray;
     storedSettings.write({ window: next });
     return next;
+  });
+  register('window:minimize', event => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (window !== mainWindow) return false;
+    window.minimize();
+    return true;
+  });
+  register('window:maximize', event => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (window !== mainWindow) return false;
+    if (window.isMaximized()) window.unmaximize();
+    else window.maximize();
+    return window.isMaximized();
+  });
+  register('window:close', event => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (window !== mainWindow) return false;
+    window.close();
+    return true;
   });
   register('window:minimize-tray', () => {
     if (!mainWindow || mainWindow.isDestroyed()) return false;
@@ -191,6 +214,9 @@ app.whenReady().then(() => {
   register('windows:io-rule-set', (_event, exe, level) => changeStartupIoRule(exe, level, settings));
   register('windows:io-rule-restore', (_event, exe) => restoreStartupIoRule(exe, settings));
   register('windows:security', () => readSecurityStatus());
+  register('windows:extra-tweaks', () => readExtraTweaks());
+  register('windows:extra-set', (_event, id, enabled) => setExtraTweak(id, enabled, settings));
+  register('windows:extra-restore', (_event, id) => restoreExtraTweak(id, settings));
   register('windows:open-setting', async (_event, target) => {
     const destinations = {
       visualPerformance: 'SystemPropertiesPerformance.exe',
@@ -236,6 +262,7 @@ app.whenReady().then(() => {
   register('system:restore-service', (_event, id) => operations.restore(id));
 
   app.on('before-quit', event => {
+    allowQuit = true;
     if (app.isQuittingAfterRestore) return;
     if (!gaming.status()) { memory.dispose(); standby.dispose(); telemetry.dispose(); gaming.dispose(); return; }
     event.preventDefault();

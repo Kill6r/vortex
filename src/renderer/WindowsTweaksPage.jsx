@@ -90,23 +90,25 @@ export function GraphicsPage({ api }) {
   }
   return <div className="vt-wrap"><div className="page-heading"><div><h1>Graficos y GPU</h1><p>Opciones del controlador y del sistema, con verificacion de compatibilidad.</p></div><button className="btn btn-dark" onClick={refresh}><RefreshCw size={15}/> Actualizar</button></div>
     <Message message={notice}/>
-    <Section title="Programacion de GPU acelerada por hardware (HAGS)" description="Lectura del registro de Windows. El efecto real depende del controlador y de reiniciar el equipo.">
+    <Section title="Programacion de GPU acelerada por hardware (HAGS)" description="Lectura de HAGS desde el controlador WDDM y de la configuracion guardada en Windows.">
       <div className="vt-row vt-row-hags">
         <div className="vt-row-description">
           <strong>Estado de HAGS</strong>
           <small>{status?.hagsNote || 'Consultando el estado en Windows...'}</small>
-          <Status enabled={status?.hagsValue === 2 ? true : status?.hagsValue === 1 ? false : null} requested/>
+          <Status enabled={status?.hagsEffective?.available ? status.hagsEffective.enabled : null}/>
+          <span className="vt-source">{status?.hagsEffective?.available ? `Estado efectivo por WDDM · ${status.hagsEffective.adapters.length} pantalla(s) · ${status.hagsEffective.supported ? "compatible" : "sin soporte de HAGS"}` : `Estado efectivo no disponible · ${status?.hagsEffective?.error || "Sin respuesta de WDDM"}`}</span>
+          <span className="vt-source">Configuracion guardada: {status?.hagsValue === 2 ? "activar" : status?.hagsValue === 1 ? "desactivar" : "predeterminada"}</span>
           {status?.hagsPendingRestart && <span className="vt-pending">Reinicio pendiente</span>}
         </div>
-        <Choice enabled={status?.hagsValue === 2 ? true : status?.hagsValue === 1 ? false : null} change={hags} busy={busy} refresh={refresh} refreshBusy={refreshBusy}/>
+        <Choice enabled={status?.hagsEffective?.available ? status.hagsEffective.enabled : status?.hagsValue === 2 ? true : status?.hagsValue === 1 ? false : null} change={hags} busy={busy} refresh={refresh} refreshBusy={refreshBusy}/>
       </div>
-      <div className="vt-row"><div><strong>Comprobacion del estado efectivo</strong><small>Actualizar vuelve a leer el ajuste configurado. Para saber si el controlador lo ha aplicado, consulta tambien la configuracion grafica de Windows.</small></div><button className="btn btn-dark" onClick={() => api.openSystemSetting('graphics')}><ExternalLink size={15}/> Abrir en Windows</button></div>
+      <div className="vt-row"><div><strong>Comprobacion del estado efectivo</strong><small>Actualizar consulta los bits HwSchSupported y HwSchEnabled del controlador WDDM y vuelve a leer el registro.</small></div><button className="btn btn-dark" onClick={() => api.openSystemSetting('graphics')}><ExternalLink size={15}/> Abrir en Windows</button></div>
     </Section>
-    <Section title="Resizable BAR (ReBAR)" description="VORTEX consulta los recursos PCI asignados a la GPU directamente desde Windows, sin abrir NVIDIA.">
-      <div className="vt-row"><div className="vt-row-description"><strong>Estado de ReBAR</strong><small>{status?.rebar?.description || 'Consultando recursos PCI...'}</small><span className={`vt-status ${status?.rebar?.state === 'possible-enabled' ? 'vt-status-indicative' : 'vt-status-unknown'}`}>{status?.rebar?.state === 'possible-enabled' ? 'Posiblemente activo' : 'No se pudo verificar'}</span><span className="vt-source">Fuente: {status?.rebar?.source || 'Windows'} · {status?.rebar?.adapter || 'GPU'}</span></div><button className="vt-icon vt-refresh-icon" title="Volver a comprobar ReBAR" aria-label="Actualizar ReBAR" disabled={refreshBusy || busy} onClick={refresh}><RefreshCw size={16} className={refreshBusy ? 'rotate' : ''}/></button></div>
+    <Section title="Resizable BAR (ReBAR)" description="Verificacion automatica del tamano BAR1 con el controlador NVIDIA y respaldo de recursos PCI de Windows.">
+      <div className="vt-row"><div className="vt-row-description"><strong>Estado de ReBAR</strong><small>{status?.rebar?.description || 'Consultando recursos PCI...'}</small><span className={`vt-status ${status?.rebar?.state === 'large-bar' ? 'vt-status-on' : status?.rebar?.state === 'small-bar' ? 'vt-status-indicative' : 'vt-status-unknown'}`}>{status?.rebar?.state === 'large-bar' ? 'BAR ampliada detectada' : status?.rebar?.state === 'small-bar' ? 'BAR pequena detectada' : 'No se pudo verificar'}</span><span className="vt-source">Fuente: {status?.rebar?.source || 'Windows'} · {status?.rebar?.adapter || 'GPU'}</span></div><button className="vt-icon vt-refresh-icon" title="Volver a comprobar ReBAR" aria-label="Actualizar ReBAR" disabled={refreshBusy || busy} onClick={refresh}><RefreshCw size={16} className={refreshBusy ? 'rotate' : ''}/></button></div>
       <div className="vt-row"><div><strong>GPU detectadas</strong><small>{status?.gpus?.join(', ') || 'Sin informacion disponible'}</small></div></div>
     </Section>
-    <div className="vt-hint"><AlertTriangle size={17}/> Un rango PCI grande es una pista de ReBAR, no una confirmacion definitiva. VORTEX no altera BIOS, UEFI ni firmware.</div>
+    <div className="vt-hint"><AlertTriangle size={17}/> ReBAR: el tamano BAR1 confirma la asignacion de memoria, pero no que el driver habilite la funcion para todos los juegos. VORTEX no modifica BIOS ni firmware.</div>
   </div>;
 }
 

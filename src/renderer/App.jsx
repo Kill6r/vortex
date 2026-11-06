@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  AlertTriangle, ArrowRight, ArrowUpRight, Check,
+  AlertTriangle, ArrowRight, ArrowUpRight, Check, Minus, Maximize2,
   CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Cpu, FileClock, Gamepad2, BookMarked,
   Info, LayoutDashboard, ListFilter, LockKeyhole, MemoryStick, Minimize2,
   Monitor, RefreshCw, RotateCcw, Search, Settings, ShieldCheck, SlidersHorizontal,
@@ -345,7 +345,7 @@ function App() {
           <button className="logo" onClick={() => goTo('inicio')} aria-label="VORTEX, inicio"><span className="logo-symbol"><Zap size={23} fill="currentColor"/></span><strong>VORTEX</strong><span className="logo-mini">OPTIMIZER</span></button>
         </div>
         <div className="header-right">
-          <span className="version-text">VERSIÓN 0.85</span>
+          <span className="version-text">VERSIÓN 0.86</span>
           <button className="refresh-icon" title="Actualizar datos" aria-label="Actualizar datos" disabled={refreshing || busy} onClick={() => refresh()}><RefreshCw size={17} className={refreshing ? 'rotate' : ''}/></button>
           <div className="header-actions" ref={headerMenuRef}>
             <button className="header-menu-trigger" type="button" aria-haspopup="menu" aria-expanded={headerMenuOpen} aria-controls="vortex-actions-menu" onClick={() => setHeaderMenuOpen(open => !open)}><SlidersHorizontal size={16}/><span>Opciones</span><ChevronDown size={15} className={headerMenuOpen ? 'chevron-up' : ''}/></button>
@@ -358,11 +358,16 @@ function App() {
               <button role="menuitem" onClick={() => goTo('reglas')}><BookMarked size={16}/><span>Reglas de procesos</span></button>
               <button role="menuitem" onClick={() => goTo('seguridad')}><ShieldCheck size={16}/><span>Seguridad y HVCI</span></button>
               <button role="menuitem" onClick={() => goTo('historial')}><FileClock size={16}/><span>Historial de cambios</span></button>
-              <button role="menuitem" onClick={() => { setHeaderMenuOpen(false); void api.minimizeToTray(); }}><Minimize2 size={16}/><span>Minimizar a la bandeja</span></button>
+              <button role="menuitem" onClick={() => { setHeaderMenuOpen(false); void api.minimizeToTray(); }}><Minimize2 size={16}/><span>Ocultar en la bandeja</span></button>
               <div className="header-actions-divider"/>
               <div className="header-admin-status"><span className={`header-admin-dot ${admin.enabled ? 'elevated' : ''}`}/>{admin.enabled ? 'Permisos de administrador activos' : 'Ejecutando en modo normal'}</div>
               <button role="menuitem" disabled={admin.enabled || elevating || !api?.requestAdmin} onClick={() => { setHeaderMenuOpen(false); void elevate(); }}><LockKeyhole size={16}/><span>{admin.enabled ? 'Administrador habilitado' : elevating ? 'Solicitando permisos…' : 'Activar administrador'}</span></button>
             </div>}
+          </div>
+          <div className="v86-window-controls" aria-label="Controles de la ventana">
+            <button type="button" title="Minimizar a la barra de tareas" aria-label="Minimizar" onClick={() => api?.minimizeWindow()}><Minus size={17}/></button>
+            <button type="button" title="Maximizar o restaurar" aria-label="Maximizar o restaurar" onClick={() => api?.toggleMaximizeWindow()}><Maximize2 size={15}/></button>
+            <button type="button" className="v86-close-window" title="Ocultar en la bandeja" aria-label="Cerrar ventana" onClick={() => api?.closeWindow()}><X size={19}/></button>
           </div>
         </div>
       </header>

@@ -10,7 +10,7 @@ test('Ajustes se encuentra en el menu lateral y no en el encabezado', () => {
   assert.match(app, /id: 'startup', label: 'Ajustes'/);
   assert.match(app, /className="v85-sidebar-settings"/);
   assert.doesNotMatch(app, /className=\{`header-settings/);
-  assert.match(app, /VERSIÓN 0\.85/);
+  assert.match(app, /VERSIÓN 0\.86/);
 });
 
 test('los estados de Tweaks indican seleccion activa en verde y desactiva en rojo', () => {

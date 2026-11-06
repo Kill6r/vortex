@@ -6,15 +6,15 @@ import { readGraphicsStatus } from '../src/main/windows-tweaks.js';
 
 test('identifica un mapeo PCI grande como indicio y no como confirmacion de ReBAR', () => {
   const result = summarizeRebarResources([{ name: 'NVIDIA GeForce RTX 3050', largestBarBytes: 8 * 1024 ** 3 }], ['NVIDIA GeForce RTX 3050']);
-  assert.equal(result.state, 'possible-enabled');
+  assert.equal(result.state, 'large-bar');
   assert.equal(result.confidence, 'indicative');
   assert.equal(result.largestBarBytes, 8 * 1024 ** 3);
-  assert.match(result.description, /indicio.*no una confirmacion/);
+  assert.match(result.description, /ampliada.*no demuestra/);
 });
 
 test('ReBAR no aparece desactivado solo por falta de recursos visibles', () => {
   assert.equal(summarizeRebarResources([]).state, 'unknown');
-  assert.equal(summarizeRebarResources([{ name: 'NVIDIA RTX 3050', largestBarBytes: 256 * 1024 ** 2 }]).state, 'unknown');
+  assert.equal(summarizeRebarResources([{ name: 'NVIDIA RTX 3050', largestBarBytes: 256 * 1024 ** 2 }]).state, 'small-bar');
   assert.equal(summarizeRebarResources([{ name: 'Intel UHD Graphics', largestBarBytes: 8 * 1024 ** 3 }]).state, 'unknown');
 });
 
@@ -35,7 +35,7 @@ test('actualizar HAGS vuelve a leer su valor configurado y el estado de ReBAR', 
   const settings = { read: () => ({}) };
   const first = await readGraphicsStatus(execute, hardware, probe, settings);
   assert.equal(first.hagsValue, 1);
-  assert.equal(first.rebar.state, 'possible-enabled');
+  assert.equal(first.rebar.state, 'large-bar');
   value = 2;
   const second = await readGraphicsStatus(execute, hardware, probe, settings);
   assert.equal(second.hagsValue, 2);

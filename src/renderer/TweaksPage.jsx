@@ -1,6 +1,7 @@
 import React from 'react';
 import { Monitor, SlidersHorizontal } from 'lucide-react';
 import { WindowsTweaksPage, GraphicsPage } from './WindowsTweaksPage.jsx';
+import ExtraTweaksPage from './ExtraTweaksPage.jsx';
 
 export default function TweaksPage({ api }) {
   const moveTo = section => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -10,6 +11,7 @@ export default function TweaksPage({ api }) {
       <nav className="v84-tweaks-links" aria-label="Ir a ajustes">
         <button onClick={() => moveTo('tweaks-windows')}><SlidersHorizontal size={16}/> Windows</button>
         <button onClick={() => moveTo('tweaks-graphics')}><Monitor size={16}/> Graficos y GPU</button>
+        <button onClick={() => moveTo('tweaks-extra')}><SlidersHorizontal size={16}/> Mas tweaks</button>
       </nav>
     </div>
     <section id="tweaks-windows" className="v84-tweaks-section">
@@ -19,6 +21,10 @@ export default function TweaksPage({ api }) {
     <section id="tweaks-graphics" className="v84-tweaks-section">
       <div className="v84-tweaks-section-title"><span><Monitor size={19}/></span><div><h2>Graficos y GPU</h2><p>Programacion de GPU, HAGS y estado de ReBAR.</p></div></div>
       <GraphicsPage api={api}/>
+    </section>
+    <section id="tweaks-extra" className="v84-tweaks-section">
+      <div className="v84-tweaks-section-title"><span><SlidersHorizontal size={19}/></span><div><h2>Mas tweaks</h2><p>Escritorio, juegos y privacidad con opciones restaurables.</p></div></div>
+      <ExtraTweaksPage api={api}/>
     </section>
   </div>;
 }

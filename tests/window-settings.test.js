@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { windowSettings } from '../src/core/window-settings.js';
 
-test('minimiza a bandeja de forma predeterminada', () => {
-  assert.deepEqual(windowSettings(), { minimizeToTray: true });
+test('X envia a bandeja por defecto y minimizar conserva la barra de tareas', () => {
+  assert.equal(windowSettings().closeToTray, true);
 });
 
-test('permite desactivar la minimización automática', () => {
-  assert.deepEqual(windowSettings({ minimizeToTray: false }), { minimizeToTray: false });
-  assert.deepEqual(windowSettings({ minimizeToTray: 'no' }), { minimizeToTray: true });
+test('permite desactivar cerrar a bandeja y migra el ajuste anterior', () => {
+  assert.equal(windowSettings({ closeToTray: false }).closeToTray, false);
+  assert.equal(windowSettings({ minimizeToTray: false }).closeToTray, false);
+  assert.equal(windowSettings({ minimizeToTray: 'no' }).closeToTray, true);
 });

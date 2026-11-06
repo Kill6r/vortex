@@ -3,6 +3,8 @@ import { visualSettings, validateVisualChoice, validateStartupIo, ioRegistryValu
 import { getHardwareDetails } from './system.js';
 import { readRebarResources } from './rebar-probe.js';
 import { summarizeRebarResources } from '../core/rebar-status.js';
+import { readHagsEffective } from './hags-probe.js';
+import { readNvidiaBarReport } from './nvidia-bar-probe.js';
 import os from 'node:os';
 
 const visualRegistry = {
@@ -53,11 +55,13 @@ export async function restoreVisualSetting(key, settings, execute = executeJson)
   return { key, restored: true };
 }
 
-export async function readGraphicsStatus(execute = executeJson, hardware = getHardwareDetails, rebarProbe = readRebarResources, settings = null) {
-  const [data, details, probe] = await Promise.all([
+export async function readGraphicsStatus(execute = executeJson, hardware = getHardwareDetails, rebarProbe = readRebarResources, settings = null, hagsProbe = readHagsEffective, nvidiaProbe = readNvidiaBarReport) {
+  const [data, details, probe, effective, bar1] = await Promise.all([
     execute(`$item = Get-ItemProperty -LiteralPath '${graphicKey}' -Name HwSchMode -ErrorAction SilentlyContinue; [pscustomobject]@{ registryValue = $(if ($null -eq $item) { $null } else { [int]$item.HwSchMode }) } | ConvertTo-Json -Compress`),
     hardware(),
-    rebarProbe()
+    rebarProbe(),
+    hagsProbe(),
+    nvidiaProbe()
   ]);
   const lastChange = settings?.read()?.hagsLastChange;
   const bootTime = Date.now() - os.uptime() * 1000;
@@ -67,8 +71,9 @@ export async function readGraphicsStatus(execute = executeJson, hardware = getHa
     hags,
     hagsValue: data?.registryValue ?? null,
     hagsPendingRestart: pendingRestart,
-    hagsNote: pendingRestart ? 'Valor guardado. Reinicia Windows para solicitar que surta efecto.' : 'Lectura actual del registro. Windows y el controlador determinan si HAGS funciona realmente.',
-    rebar: summarizeRebarResources(probe, details?.gpus || []),
+    hagsNote: pendingRestart ? 'Hay cambios de HAGS pendientes de reiniciar Windows. Se muestra el estado efectivo de esta sesion.' : effective?.available ? 'Estado efectivo consultado directamente al controlador grafico mediante WDDM.' : 'El controlador no devolvio el estado efectivo. Se muestra por separado el valor configurado en Windows.',
+    hagsEffective: effective || { available: false, enabled: null, supported: null, adapters: [] },
+    rebar: summarizeRebarResources(probe, details?.gpus || [], bar1),
     gpus: details?.gpus || [],
     checkedAt: Date.now()
   };
