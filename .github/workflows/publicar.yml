@@ -47,8 +47,47 @@ jobs:
             git push origin "$tag"
             if ($LASTEXITCODE -ne 0) { throw "No se pudo publicar la etiqueta $tag" }
           }
-      - name: Publicar instalador y archivos de actualizacion
-        run: npm run publish
+      - name: Compilar instalador y metadatos
+        shell: pwsh
+        run: |
+          npm run build
+          if ($LASTEXITCODE -ne 0) { throw "No se pudo compilar VORTEX" }
+          npx electron-builder --config electron-builder.config.cjs --win nsis --publish never
+          if ($LASTEXITCODE -ne 0) { throw "No se pudo generar el instalador" }
+      - name: Publicar y comprobar archivos de actualizacion
+        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          $version = node -p "require('./package.json').version"
+          $tag = "v$version"
+          $setup = Get-ChildItem release -File -Filter "VORTEX Setup *.exe" | Select-Object -First 1
+          $metadataPath = "release/latest.yml"
+          if (-not $setup -or -not (Test-Path $metadataPath)) {
+            throw "Falta el instalador o latest.yml"
+          }
+          $blockmapPath = "$($setup.FullName).blockmap"
+          if (-not (Test-Path $blockmapPath)) { throw "Falta el archivo blockmap" }
+          $assetName = "VORTEX-Setup-$version.exe"
+          $manifest = Get-Content $metadataPath -Raw
+          if (-not $manifest.Contains($assetName)) {
+            throw "latest.yml no coincide con el instalador esperado: $assetName"
+          }
+          $assetSetup = Join-Path release $assetName
+          $assetBlockmap = "$assetSetup.blockmap"
+          Copy-Item $setup.FullName $assetSetup -Force
+          Copy-Item $blockmapPath $assetBlockmap -Force
+          gh release view $tag --repo $env:GITHUB_REPOSITORY 1>$null 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --repo $env:GITHUB_REPOSITORY --title "VORTEX v$version" --notes "Version $version de VORTEX" --latest
+            if ($LASTEXITCODE -ne 0) { throw "No se pudo crear el release" }
+          }
+          gh release upload $tag $assetSetup $assetBlockmap $metadataPath --clobber --repo $env:GITHUB_REPOSITORY
+          if ($LASTEXITCODE -ne 0) { throw "No se pudieron subir los archivos de actualizacion" }
+          $release = gh release view $tag --repo $env:GITHUB_REPOSITORY --json assets | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw "No se pudo verificar el release" }
+          $names = @($release.assets | ForEach-Object { $_.name })
+          foreach ($required in @("latest.yml", $assetName, "$assetName.blockmap")) {
+            if ($names -notcontains $required) { throw "Falta el archivo $required en GitHub Releases" }
+          }
+          Write-Host "Release completo: $tag"
