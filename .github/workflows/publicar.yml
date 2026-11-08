@@ -37,7 +37,15 @@ jobs:
           if ($LASTEXITCODE -eq 0) {
             $head = git rev-parse HEAD
             if ($existing.Trim() -ne $head.Trim()) {
-              throw "La etiqueta $tag ya apunta a otra revision. Incrementa la version."
+              git merge-base --is-ancestor $existing.Trim() $head.Trim()
+              if ($LASTEXITCODE -ne 0) {
+                throw "La etiqueta $tag apunta a una rama diferente. Incrementa la version."
+              }
+              $oldVersion = git show "${tag}:package.json" | ConvertFrom-Json
+              if ($oldVersion.version -ne $version) {
+                throw "La version de la etiqueta no coincide con package.json."
+              }
+              Write-Host "Reparando publicacion existente: $tag"
             }
             Write-Host "La etiqueta $tag ya existe"
           } else {
