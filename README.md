@@ -1,8 +1,15 @@
-# VORTEX 0.86
+# VORTEX 0.89
 
 Optimizador de Windows desarrollado con JavaScript, Node.js, Electron y React. Los cambios del sistema son opcionales y no garantizan mejoras de FPS.
 
-## Nuevo en v0.86
+## Nuevo en v0.89
+
+- La cabecera y el menu lateral incorporan un acabado oscuro tipo Acrylic, con desenfoque localizado y sin efectos costosos en cada tarjeta.
+- En Windows 11 22H2 o posterior, Electron intenta activar Mica como material nativo del marco. Su visualizacion depende de la version de Windows y de la composicion de la ventana.
+- El menu lateral tiene un indicador que se desplaza entre apartados y respeta la configuracion de movimiento reducido del sistema.
+- Las transiciones entre paginas tienen desplazamiento corto y desenfoque ligero, manteniendo todas las funciones de la v0.86.
+
+## Incluido desde v0.86
 
 - La cabecera propia de VORTEX es ahora la barra de titulo de la ventana. Los botones permiten minimizar a la barra de tareas, maximizar o restaurar y cerrar.
 - Minimizar (-) no oculta VORTEX en la bandeja. Pulsar X lo envia a la bandeja cuando esta habilitada la opcion "Cerrar a la bandeja" en Ajustes; el menu del icono de la bandeja contiene "Salir de VORTEX" para terminar completamente.

@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle, ArrowRight, ArrowUpRight, Check, Minus, Maximize2,
   CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Cpu, FileClock, Gamepad2, BookMarked,
   Info, LayoutDashboard, ListFilter, LockKeyhole, MemoryStick, Minimize2,
   Monitor, RefreshCw, RotateCcw, Search, Settings, ShieldCheck, SlidersHorizontal,
-  Wrench, X, Zap, DatabaseZap, Trash2, HardDrive, Server, Palette
+  Wrench, X, Zap, DatabaseZap, Trash2, HardDrive, Server, Palette, Github
 } from 'lucide-react';
 import { defaultPreferences, preferenceOptions } from '../core/catalog.js';
 import { percentLabel, memoryUsedTotal, clockLabel } from '../core/overview-display.js';
@@ -91,6 +91,8 @@ function Empty({ title, description }) {
 function App() {
   const api = window.vortex;
   const [page, setPage] = useState('inicio');
+  const sidebarRef = useRef(null);
+  const [sidebarIndicator, setSidebarIndicator] = useState({ top: 0, height: 40, ready: false });
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const headerMenuRef = useRef(null);
   const [admin, setAdmin] = useState({ enabled: false });
@@ -160,6 +162,30 @@ function App() {
       document.removeEventListener('keydown', closeEscape);
     };
   }, [headerMenuOpen]);
+
+  useLayoutEffect(() => {
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+    const sync = () => {
+      const selected = sidebar.querySelector('.nav-item.selected');
+      if (!selected) return;
+      const origin = sidebar.getBoundingClientRect();
+      const current = selected.getBoundingClientRect();
+      const next = { top: Math.round(current.top - origin.top), height: Math.round(current.height), ready: true };
+      setSidebarIndicator(previous => previous.top === next.top && previous.height === next.height && previous.ready ? previous : next);
+    };
+    sync();
+    window.addEventListener('resize', sync);
+    let observer = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(sync);
+      observer.observe(sidebar);
+    }
+    return () => {
+      window.removeEventListener('resize', sync);
+      observer?.disconnect();
+    };
+  }, [page]);
 
   function goTo(nextPage) {
     setPage(nextPage);
@@ -345,7 +371,7 @@ function App() {
           <button className="logo" onClick={() => goTo('inicio')} aria-label="VORTEX, inicio"><span className="logo-symbol"><Zap size={23} fill="currentColor"/></span><strong>VORTEX</strong><span className="logo-mini">OPTIMIZER</span></button>
         </div>
         <div className="header-right">
-          <span className="version-text">VERSIÓN 0.86</span>
+          <span className="version-text">VERSIÓN 0.89</span>
           <button className="refresh-icon" title="Actualizar datos" aria-label="Actualizar datos" disabled={refreshing || busy} onClick={() => refresh()}><RefreshCw size={17} className={refreshing ? 'rotate' : ''}/></button>
           <div className="header-actions" ref={headerMenuRef}>
             <button className="header-menu-trigger" type="button" aria-haspopup="menu" aria-expanded={headerMenuOpen} aria-controls="vortex-actions-menu" onClick={() => setHeaderMenuOpen(open => !open)}><SlidersHorizontal size={16}/><span>Opciones</span><ChevronDown size={15} className={headerMenuOpen ? 'chevron-up' : ''}/></button>
@@ -372,15 +398,23 @@ function App() {
         </div>
       </header>
       <aside className="sidebar">
-        <div className="side-group"><span>HERRAMIENTAS</span>{navigation.filter(item => item.id !== 'startup').map(item => navigationButton(item))}<div className="v85-sidebar-settings"><span>CONFIGURACION</span>{navigation.filter(item => item.id === 'startup').map(item => navigationButton(item))}</div></div>
+        <div className="side-group" ref={sidebarRef}>
+          <span className="v89-nav-indicator" aria-hidden="true" style={{ '--v89-indicator-y': `${sidebarIndicator.top}px`, '--v89-indicator-height': `${sidebarIndicator.height}px`, opacity: sidebarIndicator.ready ? 1 : 0 }}/>
+          <span>HERRAMIENTAS</span>
+          {navigation.filter(item => item.id !== 'startup').map(item => navigationButton(item))}
+          <div className="v85-sidebar-settings"><span>CONFIGURACION</span>{navigation.filter(item => item.id === 'startup').map(item => navigationButton(item))}</div>
+        </div>
         
-        <div className="side-bottom"><span>VORTEX / DESKTOP</span><span>WINDOWS 10 — 11</span></div>
+        <div className="side-bottom">
+          <div className="side-bottom-meta"><span>VORTEX</span><span>v0.89</span></div>
+          <button className="side-github" type="button" onClick={() => api?.openExternalUrl?.('github')} aria-label="Abrir repositorio de GitHub"><Github size={15}/><span>GitHub</span></button>
+        </div>
       </aside>
 
       <main className="main">
         <div className="workspace">
           {message && <div className={`message message-${message.kind}`}><span>{message.kind === 'error' ? <AlertTriangle size={17}/> : <CheckCircle2 size={17}/>} {message.text}</span><button aria-label="Cerrar" onClick={() => setMessage(null)}><X size={16}/></button></div>}
-          {loading && !overview ? <div className="loading"><span className="loader"/><p>Analizando Windows…</p></div> : <>
+          {loading && !overview ? <div className="loading"><span className="loader"/><p>Analizando Windows…</p></div> : <div key={page} className="page-switch">
             {page === 'inicio' && <>
               <div className="v83-title"><div><span className="v83-eyebrow">VORTEX · PANEL PRINCIPAL</span><h1>Tu equipo, a tu manera<span>.</span></h1><p>Hardware, rendimiento y herramientas en un solo lugar.</p></div><button className="btn btn-dark" onClick={() => refresh()} disabled={refreshing}><RefreshCw size={16}/> Actualizar</button></div>
               <div className="v83-hardware-grid">
@@ -459,8 +493,7 @@ function App() {
             {page === 'juegos' && <GamesPage api={api} onOpenRules={() => setPage('reglas')}/>}
             {page === 'reglas' && <RulesPage api={api}/>}
             {page === 'startup' && <StartupPage api={api} admin={admin} elevate={elevate}/>}
-          </>}
-          <div className="workspace-footer"><span>VORTEX · WINDOWS OPTIMIZER</span><span>Las optimizaciones requieren tu confirmación o una programación explícita.</span></div>
+          </div>}
         </div>
       </main>
 

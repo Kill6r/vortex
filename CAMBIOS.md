@@ -1,5 +1,22 @@
 # Cambios de VORTEX
 
+## 0.89
+
+- Fondo Mica nativo en Windows 11 cuando lo permite Electron.
+- Efecto acrilico discreto en la cabecera, el menu lateral y los dialogos.
+- Indicador lateral animado que se desliza entre los apartados, incluso Ajustes.
+- Transiciones de pagina mas suaves, con animacion reducida cuando Windows solicita menos movimiento.
+- Eliminar blur innecesario de las tarjetas para conservar fluidez.
+
+## 0.88
+
+- Quitar el texto inferior de confirmacion en el area de trabajo.
+- Pie lateral simplificado con version v0.88 y acceso directo al repositorio de GitHub.
+- Nueva fuente principal mas limpia y nitida para toda la app.
+- Tweaks redisenado con estilo mas oscuro, minimalista y cercano a Sparkle.
+- Busqueda y filtros por categoria para los tweaks extra.
+- Tarjetas menos iluminadas y barra de desplazamiento mas discreta.
+
 ## 0.86
 
 - Correccion del estado efectivo de HAGS por consulta al controlador WDDM.

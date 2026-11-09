@@ -75,7 +75,7 @@ function createWindow() {
     height: 900,
     minWidth: 1080,
     minHeight: 690,
-    backgroundColor: '#202020',
+    backgroundColor: '#0b1526',
     title: 'VORTEX',
     icon: path.join(currentDirectory, 'assets', 'vortex-logo.png'),
     autoHideMenuBar: true,
@@ -86,6 +86,11 @@ function createWindow() {
       sandbox: true
     }
   });
+
+  if (process.platform === 'win32' && typeof window.setBackgroundMaterial === 'function') {
+    try { window.setBackgroundMaterial('mica'); }
+    catch {}
+  }
 
   mainWindow = window;
   window.once('ready-to-show', () => {
@@ -234,6 +239,15 @@ app.whenReady().then(() => {
         child.once('spawn', () => { child.unref(); resolve(true); });
       });
     }
+    await shell.openExternal(destinations[target]);
+    return true;
+  });
+
+  register('system:open-link', async (_event, target) => {
+    const destinations = {
+      github: 'https://github.com/Kill6r/vortex'
+    };
+    if (!Object.hasOwn(destinations, target)) throw new Error('El enlace solicitado no esta permitido.');
     await shell.openExternal(destinations[target]);
     return true;
   });

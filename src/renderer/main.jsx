@@ -5,9 +5,9 @@ import './styles.css';
 import './v06.css';
 import './rules.css';
 import './v83.css';
+import './v85.css';
+import './v86.css';
+import './v87.css';
 
 createRoot(document.getElementById('root')).render(<App />);
-
-import './v85.css';
-
-import './v86.css';
+import './v89.css';
