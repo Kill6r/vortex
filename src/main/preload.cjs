@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld('vortex', {
   securityStatus: () => ipcRenderer.invoke('windows:security'),
   openSystemSetting: target => ipcRenderer.invoke('windows:open-setting', target),
   openExternalUrl: target => ipcRenderer.invoke('system:open-link', target),
+  openRyzenMaster: () => ipcRenderer.invoke('system:open-ryzen-master'),
 
   history: () => ipcRenderer.invoke('system:history'),
   changeService: (name, mode, advanced = false) => ipcRenderer.invoke('system:change-service', name, mode, advanced),

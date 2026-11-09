@@ -10,14 +10,13 @@ test('Ajustes se encuentra en el menu lateral y no en el encabezado', () => {
   assert.match(app, /id: 'startup', label: 'Ajustes'/);
   assert.match(app, /className="v85-sidebar-settings"/);
   assert.doesNotMatch(app, /className=\{`header-settings/);
-  assert.match(app, /VERSIÓN 0\.90/);
+  assert.match(app, /VERSIÓN 0\.91/);
 });
 
 test('los estados de Tweaks indican seleccion activa en verde y desactiva en rojo', () => {
-  assert.match(tweaks, /aria-pressed=\{enabled === true\}/);
-  assert.match(tweaks, /aria-pressed=\{enabled === false\}/);
-  assert.match(css, /vt-choice-on\.vt-choice-selected/);
-  assert.match(css, /vt-choice-off\.vt-choice-selected/);
+  assert.match(tweaks, /role="switch"/);
+  assert.match(tweaks, /aria-checked=\{enabled === true\}/);
+  assert.match(tweaks, /v91-switch-on/);
   assert.match(css, /\.vt-status-on/);
   assert.match(css, /\.vt-status-off/);
 });

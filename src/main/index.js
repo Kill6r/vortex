@@ -249,9 +249,27 @@ app.whenReady().then(() => {
     return true;
   });
 
+  register('system:open-ryzen-master', async () => {
+    if (process.platform !== 'win32') throw new Error('Ryzen Master solo esta disponible en Windows.');
+    const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
+    const paths = [
+      path.join(programFiles, 'AMD', 'RyzenMaster', 'bin', 'AMD Ryzen Master.exe'),
+      path.join(programFiles, 'AMD', 'Ryzen Master', 'bin', 'AMD Ryzen Master.exe')
+    ];
+    const installed = paths.find(candidate => fs.existsSync(candidate));
+    if (installed) {
+      const error = await shell.openPath(installed);
+      if (error) throw new Error(error);
+      return { opened: 'installed' };
+    }
+    await shell.openExternal('https://www.amd.com/es/products/software/ryzen-master.html');
+    return { opened: 'download' };
+  });
+
   register('system:open-link', async (_event, target) => {
     const destinations = {
-      github: 'https://github.com/Kill6r/vortex'
+      github: 'https://github.com/Kill6r/vortex',
+      'amd-ryzen-master': 'https://www.amd.com/es/products/software/ryzen-master.html'
     };
     if (!Object.hasOwn(destinations, target)) throw new Error('El enlace solicitado no esta permitido.');
     await shell.openExternal(destinations[target]);

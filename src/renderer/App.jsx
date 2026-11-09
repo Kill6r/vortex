@@ -371,7 +371,7 @@ function App() {
           <button className="logo" onClick={() => goTo('inicio')} aria-label="VORTEX, inicio"><span className="logo-symbol"><Zap size={23} fill="currentColor"/></span><strong>VORTEX</strong><span className="logo-mini">OPTIMIZER</span></button>
         </div>
         <div className="header-right">
-          <span className="version-text">VERSIÓN 0.90</span>
+          <span className="version-text">VERSIÓN 0.91</span>
           <button className="refresh-icon" title="Actualizar datos" aria-label="Actualizar datos" disabled={refreshing || busy} onClick={() => refresh()}><RefreshCw size={17} className={refreshing ? 'rotate' : ''}/></button>
           <div className="header-actions" ref={headerMenuRef}>
             <button className="header-menu-trigger" type="button" aria-haspopup="menu" aria-expanded={headerMenuOpen} aria-controls="vortex-actions-menu" onClick={() => setHeaderMenuOpen(open => !open)}><SlidersHorizontal size={16}/><span>Opciones</span><ChevronDown size={15} className={headerMenuOpen ? 'chevron-up' : ''}/></button>
@@ -406,7 +406,7 @@ function App() {
         </div>
         
         <div className="side-bottom">
-          <div className="side-bottom-meta"><span>VORTEX</span><span>v0.90</span></div>
+          <div className="side-bottom-meta"><span>VORTEX</span><span>v0.91</span></div>
           <button className="side-github" type="button" onClick={() => api?.openExternalUrl?.('github')} aria-label="Abrir repositorio de GitHub"><Github size={15}/><span>GitHub</span></button>
         </div>
       </aside>

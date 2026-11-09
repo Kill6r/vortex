@@ -18,10 +18,7 @@ function Status({ enabled, requested = false }) {
 
 function Choice({ enabled, change, busy, refresh, refreshBusy = false, restore = null }) {
   return <div className="vt-actions vt-choice-actions">
-    <div className="vt-choice-group" role="group" aria-label="Estado del ajuste">
-      <button type="button" className={`vt-choice vt-choice-off ${enabled === false ? 'vt-choice-selected' : ''}`} aria-pressed={enabled === false} disabled={busy || enabled === false} onClick={() => change(false)}>Desactivar</button>
-      <button type="button" className={`vt-choice vt-choice-on ${enabled === true ? 'vt-choice-selected' : ''}`} aria-pressed={enabled === true} disabled={busy || enabled === true} onClick={() => change(true)}>Activar</button>
-    </div>
+    <button type="button" className={`v91-switch ${enabled === true ? 'v91-switch-on' : enabled === null || enabled === undefined ? 'v91-switch-unknown' : ''}`} role="switch" aria-checked={enabled === true} aria-label={enabled === true ? 'Desactivar ajuste' : 'Activar ajuste'} title={enabled === true ? 'Desactivar ajuste' : enabled === false ? 'Activar ajuste' : 'Aplicar ajuste y comprobar'} disabled={busy} onClick={() => change(enabled !== true)}><span className="v91-switch-knob"/></button>
     {refresh ? <button className="vt-icon vt-refresh-icon" type="button" title="Volver a comprobar en Windows" aria-label="Actualizar estado" disabled={busy || refreshBusy} onClick={refresh}><RefreshCw size={16} className={refreshBusy ? 'rotate' : ''}/></button> : null}
     {restore ? <button className="vt-icon" type="button" title="Restaurar valor original" aria-label="Restaurar valor original" disabled={busy} onClick={restore}><RotateCcw size={16}/></button> : null}
   </div>;

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Monitor, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Cpu, Monitor, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { WindowsTweaksPage, GraphicsPage } from './WindowsTweaksPage.jsx';
 import ExtraTweaksPage from './ExtraTweaksPage.jsx';
+import CpuTuningPage from './CpuTuningPage.jsx';
 
 export default function TweaksPage({ api }) {
   const moveTo = section => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -17,6 +18,7 @@ export default function TweaksPage({ api }) {
         <button className="v90-jump-windows" onClick={() => moveTo('tweaks-windows')}><SlidersHorizontal size={16}/> Windows</button>
         <button className="v90-jump-graphics" onClick={() => moveTo('tweaks-graphics')}><Monitor size={16}/> Graficos y GPU</button>
         <button className="v90-jump-extras" onClick={() => moveTo('tweaks-extra')}><Sparkles size={16}/> Extras</button>
+        <button className="v91-jump-cpu" onClick={() => moveTo('tweaks-cpu')}><Cpu size={16}/> CPU y OC</button>
       </nav>
     </div>
 
@@ -33,6 +35,9 @@ export default function TweaksPage({ api }) {
     <section id="tweaks-extra" className="v84-tweaks-section">
       <div className="v84-tweaks-section-title"><span><Sparkles size={19}/></span><div><h2>Mas tweaks</h2><p>Personalizacion, escritorio, juegos y privacidad con un estilo mas parecido a Sparkle.</p></div></div>
       <ExtraTweaksPage api={api}/>
+    </section>
+    <section id="tweaks-cpu" className="v84-tweaks-section">
+      <CpuTuningPage api={api}/>
     </section>
   </div>;
 }

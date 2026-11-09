@@ -1,5 +1,14 @@
 # Cambios de VORTEX
 
+## 0.91
+
+- Sustituir los botones de activar y desactivar por interruptores individuales en el catalogo extra.
+- Mostrar etiquetas de rendimiento, gaming, privacidad, IA y niveles de precaucion.
+- Ampliar el catalogo de trece a 45 tweaks, con respaldos y comprobacion del estado.
+- Agregar guia de overclock de CPU con lectura de referencia y enlace a AMD Ryzen Master.
+- Mantener las modificaciones de CPU dentro de las herramientas oficiales; VORTEX no cambia voltajes ni frecuencias.
+- Conservar el diseño minimalista y las actualizaciones desde GitHub.
+
 ## 0.90
 
 - Barra animada de progreso al buscar actualizaciones, sin mostrar porcentajes inventados.
