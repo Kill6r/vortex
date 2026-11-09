@@ -129,7 +129,13 @@ app.whenReady().then(() => {
   setupTray();
   const telemetry = createTelemetryController();
   const liveMetrics = createLiveMetricsController({ telemetry });
-  updates = createUpdateController();
+  updates = createUpdateController({
+    onStatus: status => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed() && !window.webContents.isDestroyed()) window.webContents.send('updates:changed', status);
+      }
+    }
+  });
   const gaming = createGamingController({ ruleStore: createGameProfileStore(app.getPath('userData')), allowAutomatic: () => automaticOptimizations,
     gpuCount: async () => {
       try {

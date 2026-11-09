@@ -6,6 +6,12 @@ contextBridge.exposeInMainWorld('vortex', {
   setAutomaticOptimizations: enabled => ipcRenderer.invoke('optimizer:set-automatic', enabled),
   liveMetrics: () => ipcRenderer.invoke('system:live'),
   updateStatus: () => ipcRenderer.invoke('updates:status'),
+  onUpdateStatus: callback => {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event, status) => callback(status);
+    ipcRenderer.on('updates:changed', listener);
+    return () => ipcRenderer.removeListener('updates:changed', listener);
+  },
   checkUpdates: () => ipcRenderer.invoke('updates:check'),
   installUpdate: () => ipcRenderer.invoke('updates:install'),
   windowSettings: () => ipcRenderer.invoke('window:settings'),

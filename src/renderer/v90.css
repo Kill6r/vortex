@@ -1,0 +1,52 @@
+.v90-update-progress-block{margin-top:14px;padding:16px 17px;border:1px solid #27405d;border-radius:12px;background:#0e1d31}
+.v90-update-progress-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;color:#e8f4ff;font-size:12px}
+.v90-update-progress-header strong{font-weight:700}
+.v90-update-progress-header span{font-size:12px;color:#69d5cc;font-weight:800;font-variant-numeric:tabular-nums}
+.v90-update-progress-track{height:9px;width:100%;position:relative;overflow:hidden;border-radius:999px;border:1px solid #24405a;background:#091626}
+.v90-update-progress-fill{height:100%;width:0;border-radius:999px;background:#39c4b7;transition:width .2s ease}
+.v90-update-indeterminate .v90-update-progress-fill{position:absolute;width:32%;left:-34%;background:linear-gradient(90deg,#267e88,#55d4c7);animation:v90-progress 1.25s cubic-bezier(.32,.65,.68,.35) infinite}
+.v90-update-transfer{display:flex;justify-content:space-between;gap:12px;margin-top:10px;color:#91acc9;font-size:11px;font-variant-numeric:tabular-nums}
+.v90-update-ready{display:flex;align-items:center;gap:7px;color:#73dcb9;font-size:11px;margin:10px 0 0}
+@keyframes v90-progress{from{left:-34%}to{left:102%}}
+@media(prefers-reduced-motion:reduce){.v90-update-indeterminate .v90-update-progress-fill{animation:none;left:0;width:100%;opacity:.45}.v90-update-progress-fill{transition:none}}
+
+.v90-tweak-links button{background:#111b2a!important;border:1px solid #263a4f!important;color:#bfd1e5!important;box-shadow:none!important;transition:background-color .22s ease,border-color .22s ease,color .22s ease,transform .22s ease!important}
+.v90-tweak-links button:hover,.v90-tweak-links button:focus-visible{transform:translateY(-2px);color:#f5f9ff!important;outline-offset:3px}
+.v90-tweak-links .v90-jump-windows:hover,.v90-tweak-links .v90-jump-windows:focus-visible{background:#17302f!important;border-color:#376660!important;color:#b6eee0!important}
+.v90-tweak-links .v90-jump-graphics:hover,.v90-tweak-links .v90-jump-graphics:focus-visible{background:#1b2840!important;border-color:#3d5782!important;color:#cbdeff!important}
+.v90-tweak-links .v90-jump-extras:hover,.v90-tweak-links .v90-jump-extras:focus-visible{background:#2c2239!important;border-color:#684f7b!important;color:#e9d0fb!important}
+.v90-tweak-links .v90-jump-windows svg{color:#72c6ae}.v90-tweak-links .v90-jump-graphics svg{color:#91b5e9}.v90-tweak-links .v90-jump-extras svg{color:#c4a1dc}
+
+.v87-tweaks-page .v84-tweaks-section{--section-bg:#101d27;--section-border:#2d4851;--section-accent:#6cc9b1;scroll-margin-top:18px;padding:16px 16px 24px!important;margin:0 0 25px;border-radius:18px;background:var(--section-bg)!important;border:1px solid var(--section-border)!important}
+.v87-tweaks-page #tweaks-windows{--section-bg:#0e1d24;--section-border:#2a4749;--section-accent:#74c9b5}
+.v87-tweaks-page #tweaks-graphics{--section-bg:#111b2b;--section-border:#2c405f;--section-accent:#92b7e9}
+.v87-tweaks-page #tweaks-extra{--section-bg:#191625;--section-border:#443653;--section-accent:#c5a4d9}
+.v87-tweaks-page .v84-tweaks-section-title,.v87-tweaks-page #tweaks-graphics .v84-tweaks-section-title,.v87-tweaks-page #tweaks-extra .v84-tweaks-section-title{background:rgba(255,255,255,.021)!important;border:1px solid var(--section-border)!important;border-left:3px solid var(--section-accent)!important;border-radius:12px!important;box-shadow:none!important}
+.v87-tweaks-page .v84-tweaks-section-title>span{color:var(--section-accent)!important;background:rgba(255,255,255,.04)!important}
+.v87-tweaks-page .v84-tweaks-section-title h2{color:#eff4fa!important}.v87-tweaks-page .v84-tweaks-section-title p{color:#9aaec5!important}
+.v87-tweaks-page .vt-card{background:rgba(8,17,30,.6)!important;border-color:var(--section-border)!important;box-shadow:none!important}
+.v87-tweaks-page .vt-card .vt-head{background:rgba(255,255,255,.025)!important;border-color:var(--section-border)!important}
+.v87-tweaks-page .vt-row,.v87-tweaks-page .vt-row:nth-child(even){background:rgba(255,255,255,.012)!important;border-bottom-color:rgba(152,179,203,.1)!important;transition:background-color .2s ease!important}
+.v87-tweaks-page .vt-row:nth-child(even){background:rgba(255,255,255,.032)!important}
+.v87-tweaks-page .vt-row:hover{background:rgba(130,170,184,.075)!important}
+.v87-tweaks-page #tweaks-graphics .vt-row:hover{background:rgba(122,158,206,.095)!important}
+.v87-tweaks-page #tweaks-extra .vt-row:hover{background:rgba(167,136,199,.085)!important}
+
+.v87-tweaks-page .v87-search{background:#131a29!important;border-color:#463c56!important}
+.v87-tweaks-page .v87-search:focus-within{border-color:#795f8e!important}
+.v87-tweaks-page .v87-tab{background:#221d30!important;border-color:#473b58!important;color:#cfc3dc!important}
+.v87-tweaks-page .v87-tab:hover,.v87-tweaks-page .v87-tab.selected{background:#352a43!important;border-color:#78608a!important;color:#f5edff!important}
+.v87-tweaks-page .v87-apply-recommended{background:#1d302f!important;border-color:#3c6963!important;color:#dcf4ea!important}
+.v87-tweaks-page .v87-apply-recommended:hover{background:#254340!important}
+.v87-tweaks-page .v87-tweak-grid{gap:14px}
+.v87-tweaks-page .v87-tweak-card{--card-bg:#182235;--card-border:#354561;background:var(--card-bg)!important;border-color:var(--card-border)!important;box-shadow:none!important;transition:background-color .2s ease,border-color .2s ease,transform .2s ease!important}
+.v87-tweaks-page .v87-tweak-card[data-category="Personalizacion"]{--card-bg:#232034;--card-border:#453c59}
+.v87-tweaks-page .v87-tweak-card[data-category="Escritorio"]{--card-bg:#162635;--card-border:#345065}
+.v87-tweaks-page .v87-tweak-card[data-category="Juegos"]{--card-bg:#202631;--card-border:#455366}
+.v87-tweaks-page .v87-tweak-card[data-category="Privacidad"]{--card-bg:#1b2830;--card-border:#385056}
+.v87-tweaks-page .v87-tweak-card:hover{transform:translateY(-2px);background:color-mix(in srgb,var(--card-bg) 91%,#9dacc4)!important;border-color:#71809b!important;box-shadow:none!important}
+.v87-tweaks-page .v87-tweak-card h3{font-size:18px!important;line-height:1.3!important}
+.v87-tweaks-page .v87-tweak-card p{font-size:12px!important;color:#b2c0d2!important}
+.v87-tweaks-page .v87-restart{color:#8ea4bf!important}
+.v87-tweaks-page .v87-chip{background:rgba(0,0,0,.17)!important;border-color:rgba(145,169,197,.2)!important;color:#c0cfe3!important}
+@media(prefers-reduced-motion:reduce){.v90-tweak-links button,.v87-tweaks-page .v87-tweak-card{transition:none!important;transform:none!important}}

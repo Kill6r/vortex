@@ -1,5 +1,15 @@
 # Cambios de VORTEX
 
+## 0.90
+
+- Barra animada de progreso al buscar actualizaciones, sin mostrar porcentajes inventados.
+- Botones Windows, Graficos y GPU, y Extras con colores oscuros diferentes al pasar el cursor.
+- Fondos y tarjetas de Tweaks diferenciados por seccion y categoria, sin brillo excesivo.
+- Porcentaje real, volumen descargado y velocidad de transferencia durante la descarga.
+- Actualizaciones de estado inmediatas entre Electron y React, con consulta de respaldo.
+- Estado de descarga completada con acceso a Instalar y reiniciar.
+- Version actualizada a 0.90.
+
 ## 0.89
 
 - Fondo Mica nativo en Windows 11 cuando lo permite Electron.

@@ -13,10 +13,10 @@ export default function TweaksPage({ api }) {
         <h1>Tweaks de Windows, graficos y escritorio</h1>
         <p>Ahora el panel es mas limpio, oscuro y facil de leer. Usa las secciones para ir directo a lo que quieres ajustar.</p>
       </div>
-      <nav className="v87-hero-links" aria-label="Ir a ajustes">
-        <button onClick={() => moveTo('tweaks-windows')}><SlidersHorizontal size={16}/> Windows</button>
-        <button onClick={() => moveTo('tweaks-graphics')}><Monitor size={16}/> Graficos y GPU</button>
-        <button onClick={() => moveTo('tweaks-extra')}><Sparkles size={16}/> Extras</button>
+      <nav className="v87-hero-links v90-tweak-links" aria-label="Ir a ajustes">
+        <button className="v90-jump-windows" onClick={() => moveTo('tweaks-windows')}><SlidersHorizontal size={16}/> Windows</button>
+        <button className="v90-jump-graphics" onClick={() => moveTo('tweaks-graphics')}><Monitor size={16}/> Graficos y GPU</button>
+        <button className="v90-jump-extras" onClick={() => moveTo('tweaks-extra')}><Sparkles size={16}/> Extras</button>
       </nav>
     </div>
 

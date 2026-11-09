@@ -1,8 +1,13 @@
-# VORTEX 0.89
+# VORTEX 0.90
 
 Optimizador de Windows desarrollado con JavaScript, Node.js, Electron y React. Los cambios del sistema son opcionales y no garantizan mejoras de FPS.
 
-## Nuevo en v0.89
+## Nuevo en v0.90
+
+- Barra en tiempo real al buscar y descargar actualizaciones, con porcentaje real durante la descarga.
+- Paleta discreta por seccion en Tweaks: verde petroleo para Windows, azul para graficos y violeta oscuro para extras.
+
+## En la version v0.89
 
 - La cabecera y el menu lateral incorporan un acabado oscuro tipo Acrylic, con desenfoque localizado y sin efectos costosos en cada tarjeta.
 - En Windows 11 22H2 o posterior, Electron intenta activar Mica como material nativo del marco. Su visualizacion depende de la version de Windows y de la composicion de la ventana.

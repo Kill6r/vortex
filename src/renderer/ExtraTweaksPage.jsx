@@ -101,7 +101,7 @@ export default function ExtraTweaksPage({ api }) {
         const state = actual?.state;
         const risk = riskOf(tweak);
         const disabled = Boolean(busy) && busy !== tweak.id;
-        return <article className="v87-tweak-card" key={tweak.id}>
+        return <article className="v87-tweak-card" data-category={tweak.category} key={tweak.id}>
           <div className="v87-card-top">
             <div className="v87-card-tags">
               <span className="v87-chip">{tweak.category}</span>
