@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain, Menu, Tray, shell } from 'electron';
+import { app, BrowserWindow, clipboard, ipcMain, Menu, Tray, shell } from 'electron';
 import fs from 'node:fs';
 import { explainWindowsError } from '../core/errors.js';
 import { createLiveMetricsController } from './live-metrics.js';
+import { createCpuBenchmarkController } from './cpu-benchmark.js';
 import { createUpdateController } from './updates.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -129,6 +130,14 @@ app.whenReady().then(() => {
   setupTray();
   const telemetry = createTelemetryController();
   const liveMetrics = createLiveMetricsController({ telemetry });
+  const cpuBenchmark = createCpuBenchmarkController({
+    sampleMetrics: () => liveMetrics.snapshot(),
+    onProgress: status => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed() && !window.webContents.isDestroyed()) window.webContents.send('cpu:benchmark-changed', status);
+      }
+    }
+  });
   updates = createUpdateController({
     onStatus: status => {
       for (const window of BrowserWindow.getAllWindows()) {
@@ -196,6 +205,14 @@ app.whenReady().then(() => {
   register('system:startup', () => getStartupStatus());
   register('system:startup-set', (_event, enabled) => setStartupStatus(enabled));
   register('system:live', () => liveMetrics.snapshot());
+  register('system:copy-text', (_event, value) => {
+    if (typeof value !== 'string' || value.length > 2000) throw new Error('Texto para copiar no valido.');
+    clipboard.writeText(value);
+    return true;
+  });
+  register('cpu:benchmark-start', (_event, options) => cpuBenchmark.start(options));
+  register('cpu:benchmark-status', () => cpuBenchmark.status());
+  register('cpu:benchmark-stop', () => cpuBenchmark.stop());
   register('updates:status', () => updates.status());
   register('updates:check', () => updates.check());
   register('updates:install', () => updates.install());
@@ -269,7 +286,8 @@ app.whenReady().then(() => {
   register('system:open-link', async (_event, target) => {
     const destinations = {
       github: 'https://github.com/Kill6r/vortex',
-      'amd-ryzen-master': 'https://www.amd.com/es/products/software/ryzen-master.html'
+      'amd-ryzen-master': 'https://www.amd.com/es/products/software/ryzen-master.html',
+      'amd-ryzen-monitoring-sdk': 'https://www.amd.com/en/developer/ryzen-master-monitoring-sdk.html'
     };
     if (!Object.hasOwn(destinations, target)) throw new Error('El enlace solicitado no esta permitido.');
     await shell.openExternal(destinations[target]);
@@ -302,10 +320,10 @@ app.whenReady().then(() => {
   app.on('before-quit', event => {
     allowQuit = true;
     if (app.isQuittingAfterRestore) return;
-    if (!gaming.status()) { memory.dispose(); standby.dispose(); telemetry.dispose(); gaming.dispose(); return; }
+    if (!gaming.status()) { cpuBenchmark.dispose(); memory.dispose(); standby.dispose(); telemetry.dispose(); gaming.dispose(); return; }
     event.preventDefault();
     gaming.stop().catch(() => {}).finally(() => {
-      memory.dispose(); standby.dispose(); telemetry.dispose(); gaming.dispose();
+      cpuBenchmark.dispose(); memory.dispose(); standby.dispose(); telemetry.dispose(); gaming.dispose();
       app.isQuittingAfterRestore = true;
       app.quit();
     });

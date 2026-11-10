@@ -20,7 +20,7 @@ test('el indicador lateral se mueve con las dimensiones reales del apartado sele
   assert.match(app, /v89-nav-indicator/);
   assert.match(app, /--v89-indicator-y/);
   assert.match(app, /ResizeObserver/);
-  assert.match(app, /v0\.91/);
+  assert.match(app, /v0\.92/);
 });
 
 test('el acrilico evita aplicar blur a todas las tarjetas y respeta movimiento reducido', () => {

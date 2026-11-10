@@ -4,7 +4,7 @@ export const cleanerTargets = Object.freeze([
   { id: 'recyclebin', title: 'Papelera de reciclaje', description: 'Archivos enviados a la papelera. Se eliminaran definitivamente.', icon: 'Trash2', advanced: false, admin: false, destructive: true },
   { id: 'windows-update', title: 'Cache de Windows Update', description: 'Descargas de actualizaciones. Solo se limpiaran si los servicios de actualizacion estan detenidos.', icon: 'Download', advanced: true, admin: true },
   { id: 'thumbnails', title: 'Cache de miniaturas', description: 'Miniaturas del Explorador. Windows las creara nuevamente cuando hagan falta.', icon: 'Image', advanced: false, admin: false },
-  { id: 'errorreports', title: 'Informes de errores', description: 'Volcados de aplicaciones almacenados en la carpeta CrashDumps.', icon: 'Bug', advanced: false, admin: false }
+  { id: 'errorreports', title: 'Informes de errores', description: 'Volcados CrashDumps e informes de errores de Windows del usuario.', icon: 'Bug', advanced: false, admin: false }
 ]);
 
 export const cleanerIdSet = new Set(cleanerTargets.map(item => item.id));

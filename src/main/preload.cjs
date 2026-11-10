@@ -5,6 +5,16 @@ contextBridge.exposeInMainWorld('vortex', {
   optimizerStatus: () => ipcRenderer.invoke('optimizer:status'),
   setAutomaticOptimizations: enabled => ipcRenderer.invoke('optimizer:set-automatic', enabled),
   liveMetrics: () => ipcRenderer.invoke('system:live'),
+  copyText: value => ipcRenderer.invoke('system:copy-text', value),
+  startCpuBenchmark: options => ipcRenderer.invoke('cpu:benchmark-start', options),
+  cpuBenchmarkStatus: () => ipcRenderer.invoke('cpu:benchmark-status'),
+  stopCpuBenchmark: () => ipcRenderer.invoke('cpu:benchmark-stop'),
+  onCpuBenchmarkStatus: callback => {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event, status) => callback(status);
+    ipcRenderer.on('cpu:benchmark-changed', listener);
+    return () => ipcRenderer.removeListener('cpu:benchmark-changed', listener);
+  },
   updateStatus: () => ipcRenderer.invoke('updates:status'),
   onUpdateStatus: callback => {
     if (typeof callback !== 'function') return () => {};

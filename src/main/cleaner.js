@@ -33,7 +33,11 @@ function defaultPaths() {
     prefetch: [path.join(windows, 'Prefetch')],
     'windows-update': [path.join(windows, 'SoftwareDistribution', 'Download')],
     thumbnails: [path.join(local, 'Microsoft', 'Windows', 'Explorer')],
-    errorreports: [path.join(local, 'CrashDumps')]
+    errorreports: [
+      path.join(local, 'CrashDumps'),
+      path.join(local, 'Microsoft', 'Windows', 'WER', 'ReportArchive'),
+      path.join(local, 'Microsoft', 'Windows', 'WER', 'ReportQueue')
+    ]
   };
 }
 

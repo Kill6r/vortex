@@ -1,6 +1,6 @@
 {
   "name": "vortex-optimizer",
-  "version": "0.9.1",
+  "version": "0.9.3",
   "description": "Optimizador de Windows con procesos, perfiles de juego, cleaner y tweaks de sistema y GPU",
   "productName": "VORTEX",
   "type": "module",

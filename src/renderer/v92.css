@@ -1,0 +1,82 @@
+.v92-cpu-wrap{display:flex;flex-direction:column;gap:15px;padding:5px 3px 18px;color:#e7effd}
+.v92-cpu-badge{display:inline-flex;align-items:center;padding:7px 11px;border:1px solid #315f70;border-radius:999px;background:#142d3a;color:#a9e2e7;font-size:11px;font-weight:750}
+.v92-cpu-intro{display:flex;align-items:center;gap:13px;padding:15px 17px;border:1px solid #2c465f;border-radius:13px;background:#111f31}
+.v92-cpu-intro-icon{display:grid;place-items:center;width:40px;height:40px;flex-shrink:0;border-radius:11px;background:#1c3942;color:#91d8ce}
+.v92-cpu-intro>div:nth-child(2){min-width:0;flex:1}
+.v92-cpu-intro strong{font-size:13px;color:#eff6ff}
+.v92-cpu-intro p{font-size:11px;line-height:1.55;color:#aebfd5;margin:4px 0 0}
+.v92-cpu-intro .btn{flex-shrink:0}
+.v92-cpu-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 9px}
+.v92-cpu-section-head h3{font-size:14px;color:#f0f5ff;margin:0 0 4px}
+.v92-cpu-section-head p{font-size:11px;color:#aebed4;line-height:1.55;margin:0}
+.v92-cpu-section-head>svg{flex-shrink:0;color:#9dc9dc}
+.v92-cpu-state{font-size:10px;font-weight:750;border:1px solid #685a39;background:#2b271b;color:#e7ce91;border-radius:999px;padding:6px 9px;white-space:nowrap}
+.v92-cpu-limit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.v92-cpu-limit-card{min-width:0;padding:14px;border:1px solid #30465f;border-radius:12px;background:#142235;display:flex;flex-direction:column;gap:7px}
+.v92-cpu-limit-card>span{font-size:11px;font-weight:800;letter-spacing:.08em;color:#9fc5e8}
+.v92-cpu-limit-card>strong{font-size:25px;line-height:1.1;color:#f0f6ff;font-variant-numeric:tabular-nums}
+.v92-cpu-limit-card>strong small{font-size:12px;color:#9cb3cb}
+.v92-cpu-limit-card p{font-size:10px;line-height:1.45;color:#aabbd0;min-height:30px;margin:0}
+.v92-cpu-limit-card input{width:100%;height:35px;padding:0 10px;border:1px solid #3b5875;border-radius:8px;background:#0d1929;color:#f3f7ff;font-size:13px;font-weight:700;outline:none}
+.v92-cpu-limit-card input:focus{border-color:#6ca9ce;box-shadow:0 0 0 2px #6ca9ce22}
+.v92-cpu-limit-card>small{font-size:10px;color:#8199b5}
+.v92-cpu-profiles{padding:14px;border:1px solid #2a4058;border-radius:13px;background:#101d2d}
+.v92-cpu-profile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.v92-cpu-profile{min-width:0;text-align:left;padding:12px;border:1px solid #2e4660;border-radius:10px;background:#152438;color:#dbe8f7;cursor:pointer;transition:background .16s ease,border-color .16s ease,transform .16s ease}
+.v92-cpu-profile:hover{background:#1a2d44;border-color:#547b9d;transform:translateY(-1px)}
+.v92-cpu-profile.selected{background:#19343a;border-color:#43877e;box-shadow:inset 0 0 0 1px #43877e33}
+.v92-cpu-profile>span{display:block;font-size:12px;font-weight:800;margin-bottom:8px}
+.v92-cpu-profile>strong{display:block;font-size:14px;color:#bfe6df;font-variant-numeric:tabular-nums}
+.v92-cpu-profile>strong small{color:#7d9caa}
+.v92-cpu-profile p{font-size:10px;line-height:1.5;color:#aebed1;margin:8px 0 0}
+.v92-cpu-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.v92-cpu-actions .btn{display:inline-flex;align-items:center;gap:7px}
+.v92-cpu-actions .btn:disabled{opacity:.5;cursor:not-allowed}
+.v92-cpu-notice,.v92-cpu-error{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:9px;font-size:11px;line-height:1.55}
+.v92-cpu-notice{border:1px solid #31536b;background:#14283a;color:#bdd9ec}
+.v92-cpu-error{border:1px solid #75404b;background:#321e29;color:#f3b7c0}
+.v92-cpu-error svg,.v92-cpu-notice svg{flex-shrink:0;margin-top:1px}
+.v92-cpu-error>div{display:flex;flex-direction:column;gap:3px}
+.v92-cpu-test-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:12px}
+.v92-cpu-test-card{min-width:0;padding:15px;border:1px solid #30465f;border-radius:13px;background:#111e30}
+.v92-cpu-test-card>.v92-cpu-section-head{align-items:flex-start}
+.v92-cpu-test-actions{display:flex;flex-wrap:wrap;gap:8px;margin:11px 0}
+.v92-cpu-test-actions .btn{display:inline-flex;align-items:center;gap:7px}
+.v92-cpu-progress{padding:11px;border:1px solid #2d4862;border-radius:10px;background:#15263a;margin:11px 0}
+.v92-cpu-progress>div:first-child{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#b8c9dc;margin-bottom:7px}
+.v92-cpu-progress strong{color:#a8e1d6}
+.v92-cpu-progress-track{height:7px;overflow:hidden;border-radius:99px;background:#263c55}
+.v92-cpu-progress-track span{display:block;height:100%;border-radius:99px;background:#5cb9a7;transition:width .25s ease}
+.v92-cpu-progress>small{display:block;margin-top:7px;color:#9eb2ca;font-size:10px}
+.v92-cpu-benchmark-result,.v92-cpu-sensor-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:12px}
+.v92-cpu-sensor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.v92-cpu-metric{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px;border:1px solid #2d435c;border-radius:9px;background:#17263a}
+.v92-cpu-metric>span{font-size:9px;line-height:1.4;color:#a6bbd3}
+.v92-cpu-metric>strong{font-size:14px;color:#edf5ff;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.v92-cpu-metric>small{font-size:9px;color:#829bb7}
+.v92-cpu-comparison{display:flex;align-items:center;gap:8px;margin-top:10px;padding:9px 10px;border-radius:9px;font-size:10px;background:#192c36;border:1px solid #315b56;color:#b8e8d7}
+.v92-cpu-comparison strong{font-size:15px}
+.v92-cpu-comparison.negative{background:#30232a;border-color:#67424a;color:#f0b7be}
+.v92-cpu-reference{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;color:#9db1c9;font-size:10px}
+.v92-cpu-reference button{border:0;background:none;color:#b6d6ed;text-decoration:underline;cursor:pointer;font-size:10px}
+.v92-cpu-footnote{margin-top:11px;font-size:10px;line-height:1.55;color:#8ea4be}
+.v92-cpu-footnote strong{color:#c6d5e7}
+.v92-cpu-file-input{display:none}
+.v92-cpu-log-name{display:flex;align-items:center;gap:6px;margin-top:10px;color:#9fe0bf;font-size:10px;overflow-wrap:anywhere}
+.v92-cpu-link{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:0;border:0;background:transparent;color:#a9cce9;font-size:10px;cursor:pointer}
+.v92-cpu-link:hover{text-decoration:underline;color:#d0e7fa}
+.v92-cpu-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.v92-cpu-steps>div{display:flex;align-items:flex-start;gap:9px;padding:11px;border:1px solid #2a4057;border-radius:10px;background:#101c2b}
+.v92-cpu-steps>div>span{display:grid;place-items:center;width:23px;height:23px;flex-shrink:0;border-radius:7px;background:#1c3940;color:#a9e4d8;font-size:11px;font-weight:800}
+.v92-cpu-steps p{font-size:10px;line-height:1.55;color:#aebed1;margin:0}
+.v92-cpu-steps strong{color:#e4eefb}
+.v92-cpu-next{display:flex;gap:9px;align-items:flex-start;padding:11px 12px;border:1px solid #574b35;border-radius:10px;background:#252217;color:#d7c69d;font-size:10px;line-height:1.55}
+.v92-cpu-next svg{flex-shrink:0;color:#e3c37c}
+.v92-cpu-next p{margin:0}
+@media(max-width:1180px){.v92-cpu-test-grid{grid-template-columns:1fr}.v92-cpu-profile-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.v92-cpu-limit-grid{grid-template-columns:1fr}.v92-cpu-steps{grid-template-columns:1fr}.v92-cpu-intro{flex-wrap:wrap}.v92-cpu-intro .btn{margin-left:53px}}
+@media(prefers-reduced-motion:reduce){.v92-cpu-profile,.v92-cpu-progress-track span{transition:none!important}}
+
+/* Mantener el texto nítido durante la entrada a Tweaks. */.v87-tweaks-page,.v87-tweaks-page .v87-tweak-card,.v87-tweaks-page .vt-card{filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}.page-switch:has(.v87-tweaks-page){animation:none!important}.v87-tweaks-page .v87-tweak-card:hover,.v87-tweaks-page .v91-card:hover{transform:none!important}
+
+.v92-cpu-live{display:flex;align-items:center;flex-wrap:wrap;gap:10px 18px;margin:12px 0;padding:12px 15px;border:1px solid #37566d;border-radius:11px;background:#14293a;color:#dcefff;font-size:12px}.v92-cpu-live strong{color:#9ee8cd}.v92-cpu-live small{width:100%;color:#a9bed1}

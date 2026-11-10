@@ -12,13 +12,14 @@ export default function CleanerPage({ api }) {
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState('');
+  const [scanError, setScanError] = useState('');
 
   async function scan(force = false) {
     if (!api?.cleanerScan) return;
     setBusy(true);
     setError('');
-    try { setSnapshot(await api.cleanerScan(force)); }
-    catch (e) { setError(e.message); }
+    try { setSnapshot(await api.cleanerScan(force)); setScanError(''); }
+    catch (e) { setScanError(e.message); }
     finally { setBusy(false); }
   }
 
@@ -44,8 +45,8 @@ export default function CleanerPage({ api }) {
     try {
       const output = await api.cleanerRun(chosen.map(x => x.id), advanced);
       setResults(output);
-      setSnapshot(null);
-      setSnapshot(await api.cleanerScan(true));
+      try { setSnapshot(await api.cleanerScan(true)); setScanError(''); }
+      catch (scanFailure) { setScanError(`La limpieza terminó, pero no se pudo actualizar el análisis: ${scanFailure.message}`); }
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   }
@@ -55,10 +56,11 @@ export default function CleanerPage({ api }) {
     <section className="vcl-hero">
       <span className="vcl-mark"><Trash2 size={23}/></span>
       <div><h2>Limpiador de archivos</h2><p>{snapshot ? 'Analisis completado' : 'Analiza los residuos antes de eliminarlos'}</p><strong>{snapshot ? formatCleanerBytes(bytes) : '—'} <small>seleccionados</small></strong></div>
-      <div className="vcl-hero-actions"><button className="btn btn-dark" disabled={busy} onClick={() => setSelected(selected.length === visible.length ? [] : visible.map(item => item.id))}>{selected.length === visible.length ? 'Deseleccionar todos' : 'Seleccionar todos'}</button><button className="btn btn-lime" disabled={busy || chosen.length === 0} onClick={clean}><Trash2 size={15}/>{busy ? 'Procesando…' : 'Limpiar seleccionados'}</button></div>
+      <div className="vcl-hero-actions"><button className="btn btn-dark" disabled={busy} onClick={() => setSelected(selected.length === visible.length ? [] : visible.map(item => item.id))}>{selected.length === visible.length ? 'Deseleccionar todos' : 'Seleccionar todos'}</button><button className="btn vcl-clean-button" disabled={busy || chosen.length === 0} onClick={clean}><Trash2 size={15}/>{busy ? 'Procesando…' : 'Limpiar seleccionados'}</button></div>
     </section>
     {error && <div className="vcl-error"><AlertTriangle size={16}/>{error}</div>}
-    {results && <div className="vcl-result"><CheckCircle2 size={17}/><div><strong>Operaciones finalizadas · {formatCleanerBytes(freed)} liberados</strong>{results.results.filter(x => x.error || x.skipped).map(x => <p key={x.id}>{cleanerTargets.find(c => c.id === x.id)?.title}: {x.error || `${x.skipped} archivos bloqueados`}</p>)}</div></div>}
+    {scanError && <div className="vcl-error"><AlertTriangle size={16}/>{scanError}</div>}
+    {results && <div className="vcl-result" role="status" aria-live="polite"><span className="vcl-result-icon"><CheckCircle2 size={28}/></span><div><strong>Limpieza terminada · {formatCleanerBytes(freed)} liberados</strong><small>{results.results.reduce((sum, item) => sum + (item.deleted || 0), 0)} elementos eliminados</small><div className="vcl-result-details">{results.results.map(item => <p key={item.id}><b>{cleanerTargets.find(c => c.id === item.id)?.title}:</b> {item.error ? `No se pudo limpiar: ${item.error}` : `${item.deleted === null ? 'Papelera vaciada' : `${item.deleted} elementos eliminados`} · ${item.freed === null ? 'tamaño no disponible' : formatCleanerBytes(item.freed)} liberados${item.skipped ? ` · ${item.skipped} bloqueados` : ''}`}</p>)}</div></div></div>}
     <section className="vcl-list">
       {visible.map(target => {
         const Icon = icons[target.icon];
