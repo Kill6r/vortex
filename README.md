@@ -1,6 +1,16 @@
-# VORTEX 0.91
+# VORTEX
 
 Optimizador de Windows desarrollado con JavaScript, Node.js, Electron y React. Los cambios del sistema son opcionales y no garantizan mejoras de FPS.
+
+## Cambios desde la 0.93
+
+- El apartado de CPU muestra sensores en vivo, gráficas y grabaciones con duración configurable.
+- El benchmark permite elegir hilos y duración, guarda el historial y compara rendimiento, temperatura y consumo.
+- En Ryzen 5 9600X con firmware compatible puedes ajustar PPT, TDC, EDC, boost y Curve Optimizer desde VORTEX. Pulsa **Conectar CPU** y acepta el permiso de Windows para aplicar cambios.
+- **Analizar CPU** revisa los sensores y los ajustes activos. **Buscar mejor perfil** mide distintas configuraciones y permite cargar la mejor que encontró para rendimiento o equilibrio. El benchmark sirve para comparar resultados. La estabilidad requiere pruebas adicionales.
+- Tweaks tiene un diseño más claro y el contenido queda centrado al cambiar de apartado.
+
+Consulta los [avisos de terceros del lector de CPU](src/main/cpu-monitor/THIRD-PARTY-NOTICES.md) para ver las dependencias y sus licencias.
 
 ## Nuevo en v0.91
 

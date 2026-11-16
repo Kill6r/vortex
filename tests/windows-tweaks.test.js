@@ -53,7 +53,10 @@ test('HAGS comprueba el registro y nunca confunde esto con estar efectivo', asyn
   const change = await changeHags(true, store, execute);
   assert.equal(change.requiresRestart, true);
   assert.equal(change.effectiveVerified, false);
-  const status = await readGraphicsStatus(execute, async () => ({ gpus: ['NVIDIA GeForce'] }));
+  const status = await readGraphicsStatus(
+    execute, async () => ({ gpus: ['NVIDIA GeForce'] }), async () => null,
+    null, async () => null, async () => null
+  );
   assert.equal(status.hags, 'solicitado-activado');
   assert.equal(status.rebar.state, 'unknown');
   await restoreHags(store, execute);

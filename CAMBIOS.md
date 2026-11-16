@@ -1,5 +1,14 @@
 # Cambios de VORTEX
 
+## Cambios desde la 0.93
+
+- Nuevo panel de CPU con sensores en vivo, gráficas y grabación integrada.
+- Benchmark configurable por hilos y duración, con historial y comparación de resultados.
+- Perfiles de PBO y Curve Optimizer para Ryzen 5 9600X con firmware compatible.
+- Análisis de CPU y búsqueda automática de perfiles para rendimiento o equilibrio.
+- Mejoras en la reconexión del lector, la verificación de ajustes y la edición de PPT, boost y duración.
+- Nuevo diseño de Tweaks y ajustes de alineación en el menú.
+
 ## 0.91
 
 - Sustituir los botones de activar y desactivar por interruptores individuales en el catalogo extra.

@@ -14,3 +14,6 @@ import './v89.css';
 import './v90.css';
 import './v91.css';
 import './v92.css';
+
+import './tweaks-design.css';
+import './cpu-dashboard.css';

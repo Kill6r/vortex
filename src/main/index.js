@@ -3,6 +3,12 @@ import fs from 'node:fs';
 import { explainWindowsError } from '../core/errors.js';
 import { createLiveMetricsController } from './live-metrics.js';
 import { createCpuBenchmarkController } from './cpu-benchmark.js';
+import { createCpuProfileSweep } from './cpu-profile-sweep.js';
+import { RYZEN_9600X_MAX_BOOST_TARGET_MHZ } from '../core/cpu-benchmark-analysis.js';
+import { createCpuSensorController, activateCpuSensorDriver } from './cpu-sensors.js';
+import { createCpuRecordingController } from './cpu-recording.js';
+import { createCpuLibrary } from './cpu-library.js';
+import os from 'node:os';
 import { createUpdateController } from './updates.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -129,15 +135,80 @@ app.whenReady().then(() => {
   closeToTray = windowSettings(settings.read().window).closeToTray;
   setupTray();
   const telemetry = createTelemetryController();
-  const liveMetrics = createLiveMetricsController({ telemetry });
-  const cpuBenchmark = createCpuBenchmarkController({
-    sampleMetrics: () => liveMetrics.snapshot(),
-    onProgress: status => {
+  const cpuSensorDirectory = app.isPackaged ? path.join(process.resourcesPath, 'cpu-monitor') : path.join(currentDirectory, 'cpu-monitor');
+  const cpuSensors = createCpuSensorController({ directory: cpuSensorDirectory });
+  cpuSensors.start();
+  const liveMetrics = createLiveMetricsController({ telemetry, cpuSensorSampler: () => cpuSensors.latest() });
+  const cpuRecording = createCpuRecordingController({
+    filename: path.join(app.getPath('userData'), 'cpu-sensor-recording.json'),
+    sample: async () => {
+      const [metrics, sensors] = await Promise.all([liveMetrics.snapshot(), cpuSensors.snapshot()]);
+      return { ...metrics, ...sensors, cpuGHz: sensors.cpuGHz ?? metrics.cpuGHz };
+    },
+    onStatus: status => {
       for (const window of BrowserWindow.getAllWindows()) {
-        if (!window.isDestroyed() && !window.webContents.isDestroyed()) window.webContents.send('cpu:benchmark-changed', status);
+        if (!window.isDestroyed() && !window.webContents.isDestroyed()) window.webContents.send('cpu:recording-changed', status);
       }
     }
   });
+  const cpuLibrary = createCpuLibrary({ filename: path.join(app.getPath('userData'), 'cpu-library.json') });
+  let benchmarkRecordingId = null;
+  let sweepBenchmarkComplete = null;
+  let manualTuning = false;
+  const saveBenchmark = result => cpuLibrary.addBenchmark(result, os.cpus()[0]?.model?.trim() || '');
+  const cpuBenchmark = createCpuBenchmarkController({
+    sampleMetrics: async () => {
+      const metrics = await liveMetrics.snapshot();
+      const sensors = cpuSensors.latest();
+      return { ...metrics, ...sensors, cpuGHz: sensors.cpuGHz ?? metrics.cpuGHz, sensorSampledAt: sensors.sampledAt };
+    },
+    onProgress: status => {
+      const automated = Boolean(sweepBenchmarkComplete);
+      if (!status.running && sweepBenchmarkComplete) {
+        const complete = sweepBenchmarkComplete;
+        sweepBenchmarkComplete = null;
+        complete(status);
+      }
+      if (!automated && status.completed && status.result) {
+        try { saveBenchmark(status.result); }
+        catch { status = { ...status, historyError: 'No se pudo guardar el benchmark en el historial.' }; }
+      }
+      if (!status.running && benchmarkRecordingId !== null) {
+        if (cpuRecording.status().recordingId === benchmarkRecordingId) cpuRecording.stop();
+        benchmarkRecordingId = null;
+      }
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed() && !window.webContents.isDestroyed()) window.webContents.send('cpu:benchmark-changed', { ...status, automated });
+      }
+    }
+  });
+  const sweep = createCpuProfileSweep({
+    read: () => cpuSensors.latest(),
+    tune: (target, fingerprint) => cpuSensors.tune(target, fingerprint, 'trial'),
+    runBenchmark: options => new Promise((resolve, reject) => {
+      sweepBenchmarkComplete = status => {
+        if (status.completed && status.result) resolve(status.result);
+        else reject(new Error(status.error || 'Benchmark detenido.'));
+      };
+      cpuBenchmark.start(options).catch(error => { sweepBenchmarkComplete = null; reject(error); });
+    }),
+    stopBenchmark: () => cpuBenchmark.stop(),
+    onResult: saveBenchmark
+  });
+  function requireSweepIdle() {
+    if (sweep.isRunning()) throw new Error('Espera a que termine la ronda de perfiles o detenla primero.');
+  }
+  async function manualCpuTune(target, fingerprint, action) {
+    requireSweepIdle();
+    if (cpuBenchmark.status().running) throw new Error('Detén el benchmark antes de cambiar la configuración de CPU.');
+    if (manualTuning) throw new Error('Ya hay un ajuste de CPU en curso.');
+    if (action === 'apply' && target?.fmaxMHz > RYZEN_9600X_MAX_BOOST_TARGET_MHZ && target.fmaxMHz !== cpuSensors.latest().tuning?.fmaxMHz) {
+      throw new Error(`El objetivo máximo de boost de VORTEX para el Ryzen 5 9600X es ${RYZEN_9600X_MAX_BOOST_TARGET_MHZ} MHz (+200 MHz).`);
+    }
+    manualTuning = cpuSensors.tune(target, fingerprint, action);
+    try { return await manualTuning; }
+    finally { manualTuning = false; }
+  }
   updates = createUpdateController({
     onStatus: status => {
       for (const window of BrowserWindow.getAllWindows()) {
@@ -210,9 +281,44 @@ app.whenReady().then(() => {
     clipboard.writeText(value);
     return true;
   });
-  register('cpu:benchmark-start', (_event, options) => cpuBenchmark.start(options));
+  register('cpu:benchmark-start', async (_event, options) => {
+    requireSweepIdle();
+    if (manualTuning) throw new Error('Espera a que termine el ajuste de CPU.');
+    const tuning = cpuSensors.latest().tuning;
+    const result = await cpuBenchmark.start({ ...options, configuration: tuning?.supported ? tuning : null });
+    if (!cpuRecording.status().running) benchmarkRecordingId = cpuRecording.start({ durationSeconds: result.durationSeconds }).recordingId;
+    return result;
+  });
+  register('cpu:library', () => cpuLibrary.snapshot());
+  register('cpu:profile-save', (_event, profile) => cpuLibrary.saveProfile(profile));
+  register('cpu:profile-delete', (_event, id) => cpuLibrary.deleteProfile(id));
+  register('cpu:history-delete', (_event, id) => cpuLibrary.deleteBenchmark(id));
+  register('cpu:recording-start', (_event, options) => {
+    const durationSeconds = options?.durationSeconds ?? 300;
+    if (!Number.isInteger(durationSeconds) || durationSeconds < 60 || durationSeconds > 3600) throw new Error('Elige una duración entre 1 y 60 minutos.');
+    return cpuRecording.start({ durationSeconds });
+  });
+  register('cpu:recording-stop', () => cpuRecording.stop());
+  register('cpu:recording-status', () => cpuRecording.status());
+  register('cpu:sensors', () => cpuSensors.snapshot());
+  register('cpu:tuning-apply', (_, input, fingerprint) => manualCpuTune(input, fingerprint, 'apply'));
+  register('cpu:tuning-undo', (_, fingerprint) => manualCpuTune(null, fingerprint, 'undo'));
+  register('cpu:sensors-activate', () => activateCpuSensorDriver(cpuSensorDirectory));
+  register('cpu:sensors-authorize', () => { requireSweepIdle(); return cpuSensors.elevate(); });
+  register('cpu:sensors-reconnect', () => { requireSweepIdle(); cpuSensors.restart(); return true; });
+  register('cpu:sweep-analyze', () => {
+    if (cpuBenchmark.status().running || manualTuning) throw new Error('Espera a que termine la operación de CPU actual.');
+    return sweep.analyze();
+  });
+  register('cpu:sweep-start', (_, options) => {
+    if (cpuBenchmark.status().running || manualTuning) throw new Error('Espera a que termine la operación de CPU actual.');
+    if (!cpuSensors.latest().tuningReady) throw new Error('Conecta la CPU para autorizar la prueba automática.');
+    return sweep.start(options);
+  });
+  register('cpu:sweep-status', () => sweep.status());
+  register('cpu:sweep-stop', () => sweep.stop());
   register('cpu:benchmark-status', () => cpuBenchmark.status());
-  register('cpu:benchmark-stop', () => cpuBenchmark.stop());
+  register('cpu:benchmark-stop', () => { requireSweepIdle(); return cpuBenchmark.stop(); });
   register('updates:status', () => updates.status());
   register('updates:check', () => updates.check());
   register('updates:install', () => updates.install());
@@ -317,8 +423,23 @@ app.whenReady().then(() => {
   register('system:change-service', (_event, name, mode, advanced) => operations.change(name, mode, advanced));
   register('system:restore-service', (_event, id) => operations.restore(id));
 
+  let waitingForCpuOnQuit = false;
   app.on('before-quit', event => {
+    if (sweep.isRunning() || manualTuning) {
+      event.preventDefault();
+      if (!waitingForCpuOnQuit) {
+        waitingForCpuOnQuit = true;
+        void Promise.resolve(sweep.isRunning() ? sweep.stop() : manualTuning)
+          .catch(() => {}).finally(() => {
+            waitingForCpuOnQuit = false;
+            app.quit();
+          });
+      }
+      return;
+    }
     allowQuit = true;
+    cpuRecording.dispose();
+    cpuSensors.dispose();
     if (app.isQuittingAfterRestore) return;
     if (!gaming.status()) { cpuBenchmark.dispose(); memory.dispose(); standby.dispose(); telemetry.dispose(); gaming.dispose(); return; }
     event.preventDefault();

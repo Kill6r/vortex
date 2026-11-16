@@ -6,9 +6,32 @@ contextBridge.exposeInMainWorld('vortex', {
   setAutomaticOptimizations: enabled => ipcRenderer.invoke('optimizer:set-automatic', enabled),
   liveMetrics: () => ipcRenderer.invoke('system:live'),
   copyText: value => ipcRenderer.invoke('system:copy-text', value),
+  cpuLibrary: () => ipcRenderer.invoke('cpu:library'),
+  saveCpuProfile: profile => ipcRenderer.invoke('cpu:profile-save', profile),
+  deleteCpuProfile: id => ipcRenderer.invoke('cpu:profile-delete', id),
+  deleteCpuBenchmark: id => ipcRenderer.invoke('cpu:history-delete', id),
   startCpuBenchmark: options => ipcRenderer.invoke('cpu:benchmark-start', options),
+  startCpuRecording: options => ipcRenderer.invoke('cpu:recording-start', options),
+  stopCpuRecording: () => ipcRenderer.invoke('cpu:recording-stop'),
+  cpuRecordingStatus: () => ipcRenderer.invoke('cpu:recording-status'),
+  onCpuRecordingStatus: callback => {
+    if (typeof callback !== 'function') return () => {};
+    const listener = (_event, status) => callback(status);
+    ipcRenderer.on('cpu:recording-changed', listener);
+    return () => ipcRenderer.removeListener('cpu:recording-changed', listener);
+  },
+  authorizeCpuSensors: () => ipcRenderer.invoke('cpu:sensors-authorize'),
+  activateCpuSensors: () => ipcRenderer.invoke('cpu:sensors-activate'),
+  reconnectCpuSensors: () => ipcRenderer.invoke('cpu:sensors-reconnect'),
+  cpuSensors: () => ipcRenderer.invoke('cpu:sensors'),
+  applyCpuTuning: (target, fingerprint) => ipcRenderer.invoke('cpu:tuning-apply', target, fingerprint),
+  undoCpuTuning: fingerprint => ipcRenderer.invoke('cpu:tuning-undo', fingerprint),
   cpuBenchmarkStatus: () => ipcRenderer.invoke('cpu:benchmark-status'),
   stopCpuBenchmark: () => ipcRenderer.invoke('cpu:benchmark-stop'),
+  analyzeCpuSweep: () => ipcRenderer.invoke('cpu:sweep-analyze'),
+  startCpuSweep: options => ipcRenderer.invoke('cpu:sweep-start', options),
+  cpuSweepStatus: () => ipcRenderer.invoke('cpu:sweep-status'),
+  stopCpuSweep: () => ipcRenderer.invoke('cpu:sweep-stop'),
   onCpuBenchmarkStatus: callback => {
     if (typeof callback !== 'function') return () => {};
     const listener = (_event, status) => callback(status);

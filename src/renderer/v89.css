@@ -65,8 +65,8 @@
 
 .page-switch{animation:v89SceneIn 340ms cubic-bezier(.19,.85,.28,1) both}
 @keyframes v89SceneIn{
-  from{opacity:.4;transform:translate3d(0,8px,0);filter:blur(4px)}
-  to{opacity:1;transform:translate3d(0,0,0);filter:blur(0)}
+  from{opacity:.4}
+  to{opacity:1}
 }
 @media(prefers-reduced-motion:reduce){
   .page-switch{animation:none!important}

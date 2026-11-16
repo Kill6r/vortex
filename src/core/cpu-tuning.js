@@ -6,7 +6,7 @@ export const RYZEN_5_9600X_PROFILES = Object.freeze([
   { id: 'eco', name: 'Ahorro alto', description: 'Limites mas bajos para priorizar consumo y temperatura sobre el rendimiento multinucleo.', ppt: 65, tdc: 55, edc: 110 }
 ]);
 
-export function cpuTuningAdvice(cpuName) {
+export function cpuTuningAdvice(cpuName, nativeStatus = null) {
   const name = String(cpuName || '').trim();
   const amd = /\bAMD\b.*\bRyzen\b|\bRyzen\b/i.test(name);
   const intel = /\bIntel\b/i.test(name);
@@ -17,10 +17,10 @@ export function cpuTuningAdvice(cpuName) {
     candidate: amd,
     supported: ryzen9600x,
     external: amd,
-    directControl: false,
+    directControl: ryzen9600x && nativeStatus?.supported === true,
     canConfigurePbo: ryzen9600x,
     note: ryzen9600x
-      ? 'Ryzen 5 9600X detectado. Admite PBO y Curve Optimizer. VORTEX prepara perfiles y compara mediciones; los limites se aplican desde Ryzen Master o la BIOS.'
+      ? nativeStatus?.supported === true ? 'CPU conectada. PBO y Curve Optimizer se aplican directamente desde VORTEX y se verifican con el firmware.' : 'Ryzen 5 9600X detectado. Conecta la CPU para verificar el firmware y habilitar el tuning directo.'
       : amd
         ? 'Ryzen detectado. Ryzen Master puede ofrecer controles segun el modelo y la placa. Los perfiles PPT/TDC/EDC de esta version estan preparados para el Ryzen 5 9600X. VORTEX no modifica frecuencias ni voltajes.'
         : intel
@@ -54,6 +54,10 @@ export function cpuBaselineSummary(rows) {
 
 export function compareCpuBenchmarks(reference, current) {
   if (!reference || !current || !Number.isFinite(reference.scoreMops) || !Number.isFinite(current.scoreMops) || reference.scoreMops <= 0) return null;
+  if (reference.workerCount !== current.workerCount) return null;
+  if ((reference.benchmarkVersion ?? 1) !== (current.benchmarkVersion ?? 1)) return null;
+  if (reference.cpu && current.cpu && reference.cpu !== current.cpu) return null;
+  if (reference.testDurationSeconds && current.testDurationSeconds && reference.testDurationSeconds !== current.testDurationSeconds) return null;
   const changePercent = Math.round((current.scoreMops / reference.scoreMops - 1) * 1000) / 10;
   return { referenceScore: reference.scoreMops, currentScore: current.scoreMops, changePercent, faster: changePercent > 0, difference: Math.round((current.scoreMops - reference.scoreMops) * 100) / 100 };
 }
@@ -135,4 +139,17 @@ export function parseCpuSensorCsv(source) {
     temperatureC: stats('temperature'),
     packagePowerW: stats('packagePower')
   };
+}
+
+export function validateCurveOptimizer(values, coreCount) {
+  const valid = Array.isArray(values) && values.length === coreCount && values.every(value => Number.isInteger(value) && value >= -30 && value <= 30);
+  return { valid, error: valid ? '' : 'Introduce un entero entre -30 y +30 para cada núcleo.' };
+}
+
+export function summarizeCpuRecording(rows) {
+  const stats = key => {
+    const values = rows.map(row => row[key]).filter(value => typeof value === 'number' && Number.isFinite(value));
+    return { average: average(values), maximum: values.length ? Math.max(...values) : null };
+  };
+  return { valid: rows.length > 0, sampleCount: rows.length, cpuUsage: stats('cpuUsage'), cpuGHz: stats('cpuGHz'), pptW: stats('pptW'), tdcA: stats('tdcA'), edcA: stats('edcA'), temperatureC: stats('temperatureC'), packagePowerW: stats('packagePowerW') };
 }

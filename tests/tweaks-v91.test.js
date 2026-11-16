@@ -48,8 +48,8 @@ test('el interruptor sustituye activar y desactivar con un unico control accesib
   assert.doesNotMatch(extraUi, /vt-choice-on/);
 });
 
-test('el apartado de CPU y OC usa la pagina oficial de AMD y no ejecuta comandos de overclock', () => {
-  assert.match(tweaksUi, /CpuTuningPage/);
+test('el apartado CPU usa la pagina oficial de AMD y no ejecuta comandos de overclock', () => {
+  assert.match(tweaksUi, /onOpenCpu/);
   assert.match(index, /amd-ryzen-master/);
   assert.match(index, /www\.amd\.com\/es\/products\/software\/ryzen-master/);
   assert.match(preload, /openRyzenMaster/);

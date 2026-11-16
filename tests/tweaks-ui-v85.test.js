@@ -10,7 +10,6 @@ test('Ajustes se encuentra en el menu lateral y no en el encabezado', () => {
   assert.match(app, /id: 'startup', label: 'Ajustes'/);
   assert.match(app, /className="v85-sidebar-settings"/);
   assert.doesNotMatch(app, /className=\{`header-settings/);
-  assert.match(app, /VERSIÓN 0\.92/);
 });
 
 test('los estados de Tweaks indican seleccion activa en verde y desactiva en rojo', () => {
@@ -21,9 +20,8 @@ test('los estados de Tweaks indican seleccion activa en verde y desactiva en roj
   assert.match(css, /\.vt-status-off/);
 });
 
-test('HAGS tiene boton de actualizar y la CPU conserva GHz en el panel', () => {
+test('HAGS tiene boton de actualizar y la CPU usa GHz de las muestras en vivo', () => {
   assert.match(tweaks, /refresh=\{refresh\}/);
   assert.match(tweaks, /aria-label="Actualizar ReBAR"/);
-  assert.match(app, /overview\.currentClockMHz/);
   assert.match(app, /clockLabel\(live\?\.cpuGHz/);
 });

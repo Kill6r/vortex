@@ -2,23 +2,23 @@ import React from 'react';
 import { Cpu, Monitor, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { WindowsTweaksPage, GraphicsPage } from './WindowsTweaksPage.jsx';
 import ExtraTweaksPage from './ExtraTweaksPage.jsx';
-import CpuTuningPage from './CpuTuningPage.jsx';
+import './tweaks-design.css';
 
-export default function TweaksPage({ api }) {
+export default function TweaksPage({ api, onOpenCpu }) {
   const moveTo = section => document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  return <div className="v84-tweaks v87-tweaks-page">
+  return <div className="v84-tweaks v87-tweaks-page v94-tweaks">
     <div className="v87-tweaks-hero">
       <div>
-        <span className="v87-hero-kicker">CENTRO DE TWEAKS</span>
-        <h1>Tweaks de Windows, graficos y escritorio</h1>
-        <p>Ahora el panel es mas limpio, oscuro y facil de leer. Usa las secciones para ir directo a lo que quieres ajustar.</p>
+        <span className="v87-hero-kicker">VORTEX / CENTRO DE CONTROL</span>
+        <h1>Tu equipo. A tu manera.</h1>
+        <p>Ajusta Windows, prepara tus perfiles y compara el rendimiento de tu equipo.</p>
       </div>
       <nav className="v87-hero-links v90-tweak-links" aria-label="Ir a ajustes">
-        <button className="v90-jump-windows" onClick={() => moveTo('tweaks-windows')}><SlidersHorizontal size={16}/> Windows</button>
-        <button className="v90-jump-graphics" onClick={() => moveTo('tweaks-graphics')}><Monitor size={16}/> Graficos y GPU</button>
-        <button className="v90-jump-extras" onClick={() => moveTo('tweaks-extra')}><Sparkles size={16}/> Extras</button>
-        <button className="v91-jump-cpu" onClick={() => moveTo('tweaks-cpu')}><Cpu size={16}/> CPU y OC</button>
+        <button className="v90-jump-windows" onClick={() => moveTo('tweaks-windows')}><SlidersHorizontal size={16}/> <span>Windows<small>Fluidez y escritorio</small></span></button>
+        <button className="v90-jump-graphics" onClick={() => moveTo('tweaks-graphics')}><Monitor size={16}/> <span>Gráficos<small>GPU y compatibilidad</small></span></button>
+        <button className="v90-jump-extras" onClick={() => moveTo('tweaks-extra')}><Sparkles size={16}/> <span>Extras<small>Personaliza tu sistema</small></span></button>
+        <button className="v91-jump-cpu" onClick={onOpenCpu}><Cpu size={16}/> <span>CPU<small>Ajusta, mide y compara</small></span></button>
       </nav>
     </div>
 
@@ -33,11 +33,8 @@ export default function TweaksPage({ api }) {
     </section>
 
     <section id="tweaks-extra" className="v84-tweaks-section">
-      <div className="v84-tweaks-section-title"><span><Sparkles size={19}/></span><div><h2>Mas tweaks</h2><p>Personalizacion, escritorio, juegos y privacidad con un estilo mas parecido a Sparkle.</p></div></div>
+      <div className="v84-tweaks-section-title"><span><Sparkles size={19}/></span><div><h2>Mas tweaks</h2><p>Personalización, juegos y privacidad. Encuentra cada ajuste por categoría.</p></div></div>
       <ExtraTweaksPage api={api}/>
-    </section>
-    <section id="tweaks-cpu" className="v84-tweaks-section">
-      <CpuTuningPage api={api}/>
     </section>
   </div>;
 }

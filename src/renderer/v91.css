@@ -29,7 +29,8 @@
 .v91-switch-knob{height:19px;width:19px;position:absolute;left:3px;top:2px;background:#fff;border-radius:50%;box-shadow:0 1px 3px #0007;transition:transform .18s ease}
 .v91-switch-on{background:#166b56;border-color:#249b7b}
 .v91-switch-on .v91-switch-knob{transform:translateX(21px)}
-.v91-switch-unknown{background:#28354d;border-style:dashed;border-color:#7589a6}
+.v91-switch-unknown{background:#28354d;border-style:solid;border-color:#52637b}
+.v91-switch-unknown .v91-switch-knob{background:#9aaac0;box-shadow:none}
 .v91-switch:focus-visible{outline:2px solid #7bcdf3;outline-offset:4px}
 .v91-switch:disabled{opacity:.65;cursor:wait}
 .v87-tweaks-page .v91-tweaks .v91-card h3{font-size:16px!important;line-height:1.3!important;margin-top:1px}
