@@ -2,7 +2,7 @@
 
 Optimizador de Windows desarrollado con JavaScript, Node.js, Electron y React. Los cambios del sistema son opcionales y no garantizan mejoras de FPS.
 
-## Cambios desde la 0.93
+## Novedades de la versión 1.0.0
 
 - El apartado de CPU muestra sensores en vivo, gráficas y grabaciones con duración configurable.
 - El benchmark permite elegir hilos y duración, guarda el historial y compara rendimiento, temperatura y consumo.

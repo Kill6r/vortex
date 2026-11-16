@@ -6,6 +6,7 @@ import {
   Monitor, RefreshCw, RotateCcw, Search, Settings, ShieldCheck, SlidersHorizontal,
   Wrench, X, Zap, DatabaseZap, Trash2, HardDrive, Server, Palette, Github
 } from 'lucide-react';
+import { version } from '../../package.json';
 import { defaultPreferences, preferenceOptions } from '../core/catalog.js';
 import { percentLabel, memoryUsedTotal, clockLabel } from '../core/overview-display.js';
 import { recommendService, summarizeRecommendations } from '../core/recommendations.js';
@@ -373,7 +374,7 @@ function App() {
           <button className="logo" onClick={() => goTo('inicio')} aria-label="VORTEX, inicio"><span className="logo-symbol"><Zap size={23} fill="currentColor"/></span><strong>VORTEX</strong><span className="logo-mini">OPTIMIZER</span></button>
         </div>
         <div className="header-right">
-          <span className="version-text">VERSIÓN 0.93</span>
+          <span className="version-text">VERSIÓN {version}</span>
           <button className="refresh-icon" title="Actualizar datos" aria-label="Actualizar datos" disabled={refreshing || busy} onClick={() => refresh()}><RefreshCw size={17} className={refreshing ? 'rotate' : ''}/></button>
           <div className="header-actions" ref={headerMenuRef}>
             <button className="header-menu-trigger" type="button" aria-haspopup="menu" aria-expanded={headerMenuOpen} aria-controls="vortex-actions-menu" onClick={() => setHeaderMenuOpen(open => !open)}><SlidersHorizontal size={16}/><span>Opciones</span><ChevronDown size={15} className={headerMenuOpen ? 'chevron-up' : ''}/></button>
@@ -409,7 +410,7 @@ function App() {
         </div>
         
         <div className="side-bottom">
-          <div className="side-bottom-meta"><span>VORTEX</span><span>v0.93</span></div>
+          <div className="side-bottom-meta"><span>VORTEX</span><span>v{version}</span></div>
           <button className="side-github" type="button" onClick={() => api?.openExternalUrl?.('github')} aria-label="Abrir repositorio de GitHub"><Github size={15}/><span>GitHub</span></button>
         </div>
       </aside>

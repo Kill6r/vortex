@@ -1,6 +1,6 @@
 # Cambios de VORTEX
 
-## Cambios desde la 0.93
+## 1.0.0
 
 - Nuevo panel de CPU con sensores en vivo, gráficas y grabación integrada.
 - Benchmark configurable por hilos y duración, con historial y comparación de resultados.
