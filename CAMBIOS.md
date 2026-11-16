@@ -4,7 +4,7 @@
 
 - Valida el perfil recomendado con pruebas de 20 y 90 segundos. Compara rendimiento, temperatura y consumo, y revisa los errores de hardware de Windows.
 - Añade monitoreo SMU para Ryzen 5000 Vermeer, 7000 Raphael y 9000 Granite Ridge con firmware reconocido.
-- Habilita Curve Optimizer y la reducción de PPT, TDC y EDC en el Ryzen 7 9800X3D con tabla 0x620105.
+- Habilita Curve Optimizer y la reducción de PPT, TDC y EDC en el Ryzen 7 9800X3D con firmware compatible.
 
 ## 1.0.0
 

@@ -6,7 +6,7 @@ Optimizador de Windows desarrollado con JavaScript, Node.js, Electron y React. L
 
 - El apartado de CPU muestra sensores en vivo, gráficas y grabaciones con duración configurable.
 - El benchmark permite elegir hilos y duración, guarda el historial y compara rendimiento, temperatura y consumo.
-- Pulsa **Conectar CPU** para leer los sensores de Ryzen 5000 Vermeer, 7000 Raphael y 9000 Granite Ridge con una tabla de firmware reconocida. El 9600X permite ajustar PPT, TDC, EDC, boost y Curve Optimizer. El 9800X3D con tabla 0x620105 permite ajustar Curve Optimizer y reducir los límites de potencia y corriente, con el boost y Scalar fijos.
+- Pulsa **Conectar CPU** para leer los sensores de Ryzen 5000 Vermeer, 7000 Raphael y 9000 Granite Ridge con una tabla de firmware reconocida. El 9600X permite ajustar PPT, TDC, EDC, boost y Curve Optimizer. El 9800X3D con firmware compatible permite ajustar Curve Optimizer y reducir los límites de potencia y corriente, con el boost y Scalar fijos.
 - **Analizar CPU** revisa los sensores y los ajustes activos. **Buscar mejor perfil** mide distintas configuraciones y permite cargar la mejor que encontró para rendimiento o equilibrio. El benchmark sirve para comparar resultados. La estabilidad requiere pruebas adicionales.
 - **Validar perfil** compara el perfil activo y el candidato en pruebas de 20 y 90 segundos. Muestra las diferencias de rendimiento, temperatura y consumo, y consulta los errores de hardware de Windows.
 - Tweaks tiene un diseño más claro y el contenido queda centrado al cambiar de apartado.
