@@ -5,6 +5,7 @@ import { validateCurveOptimizer, summarizeCpuRecording, compareCpuBenchmarks } f
 import { normalizeCpuSensors } from '../src/main/cpu-sensors.js';
 import { createCpuBenchmarkController } from '../src/main/cpu-benchmark.js';
 import { createCpuProfileSweep } from '../src/main/cpu-profile-sweep.js';
+import { readCpuHardwareEvents } from '../src/main/cpu-hardware-events.js';
 
 test('curve optimizer acepta signos por núcleo y rechaza valores incompletos', () => {
   assert.equal(validateCurveOptimizer([-30, 30, 0], 3).valid, true);
@@ -120,6 +121,9 @@ test('el análisis es de solo lectura y la búsqueda combina perfiles medidos si
   let sampledAt = 0;
   const writes = [];
   const trials = [];
+  const windows = [];
+  let now = 1000;
+  let hardwareResult = 'clean';
   const sweep = createCpuProfileSweep({
     read: () => ({ tuningReady: true, tuning, temperatureC: 62, pptW: 55, thermalLimitC: 95, sampledAt: ++sampledAt }),
     tune: async (target, expected) => {
@@ -128,12 +132,20 @@ test('el análisis es de solo lectura y la búsqueda combina perfiles medidos si
       writes.push(tuning);
       return { after: tuning };
     },
-    runBenchmark: async ({ configuration }) => {
+    runBenchmark: async ({ configuration, durationSeconds, workerCount }) => {
       trials.push(configuration);
       const { ppt, tdc, edc } = configuration.limits;
       const scoreMops = 300 - configuration.curveOptimizer[0] + (95 - ppt) + (60 - tdc) + (90 - edc) + (configuration.fmaxMHz - 5450);
-      return { configuration, scoreMops, sensors: { temperatureSamples: 9, maxTemperatureC: 70 } };
+      now += durationSeconds * 1000;
+      return { id: String(trials.length), configuration, scoreMops, workerCount,
+        sensors: { temperatureSamples: durationSeconds - 1, maxTemperatureC: 70 } };
     },
+    readHardwareEvents: async (from, to) => {
+      windows.push({ from, to });
+      if (hardwareResult === 'unavailable') throw new Error('Acceso denegado');
+      return hardwareResult === 'error' && tuning.fmaxMHz === 5475 ? [{ id: 19, at: to }] : [];
+    },
+    clock: () => now,
     wait: async () => {}
   });
   const options = { durationSeconds: 10, workerCount: 1, maxBoostMHz: 25, objective: 'performance' };
@@ -162,4 +174,48 @@ test('el análisis es de solo lectura y la búsqueda combina perfiles medidos si
   assert.deepEqual(trials.at(-1).curveOptimizer, [-30, -25, -20, -5, -5, -5]);
   assert.equal(trials.at(-1).fmaxMHz, 5475);
   assert.equal(writes.at(-1).fingerprint, key(baseline));
+
+  const recommendation = sweep.status().results.at(-1);
+  assert.throws(() => sweep.startValidation({ resultId: 'unknown', expectedFingerprint: tuning.fingerprint }), /búsqueda completada/);
+  assert.throws(() => sweep.startValidation({ resultId: recommendation.id, expectedFingerprint: 'stale' }), /Cambió el perfil/);
+  sweep.startValidation({ resultId: recommendation.id, expectedFingerprint: tuning.fingerprint });
+  await new Promise(resolve => setImmediate(resolve));
+  let status = sweep.status();
+  assert.equal(status.validation.restored, true);
+  assert.equal(status.results.length, 10);
+  assert.deepEqual(status.validation.results.map(row => [row.role, row.validationSeconds, row.workerCount]), [
+    ['baseline', 20, 1], ['candidate', 20, 1], ['baseline', 90, 1], ['candidate', 90, 1]
+  ]);
+  assert.deepEqual(windows.map(({ from, to }) => (to - from) / 1000), [20, 20, 90, 90]);
+  assert.ok(status.validation.results.every(row => row.hardwareEvents.length === 0));
+  assert.equal(tuning.fingerprint, key(baseline));
+
+  hardwareResult = 'error';
+  sweep.startValidation({ resultId: recommendation.id, expectedFingerprint: tuning.fingerprint });
+  await new Promise(resolve => setImmediate(resolve));
+  status = sweep.status();
+  assert.equal(status.validation.hardwareErrors, true);
+  assert.equal(status.validation.restored, true);
+  assert.equal(status.validation.results.length, 2);
+  assert.equal(status.validation.results.at(-1).hardwareEvents[0].id, 19);
+  assert.equal(tuning.fingerprint, key(baseline));
+
+  hardwareResult = 'unavailable';
+  sweep.startValidation({ resultId: recommendation.id, expectedFingerprint: tuning.fingerprint });
+  await new Promise(resolve => setImmediate(resolve));
+  status = sweep.status();
+  assert.equal(status.validation.restored, true);
+  assert.equal(status.validation.results.length, 4);
+  assert.ok(status.validation.results.every(row => row.hardwareEvents === null));
+});
+
+test('el registro WHEA distingue una consulta vacía de una respuesta no verificable', async () => {
+  const check = async command => {
+    assert.match(command, /Microsoft-Windows-WHEA-Logger/);
+    assert.match(command, /StartTime = \$from; EndTime = \$until/);
+    return { events: [] };
+  };
+  assert.deepEqual(await readCpuHardwareEvents(1000, 2000, check), []);
+  await assert.rejects(readCpuHardwareEvents(1000, 2000, async () => null), /registro de hardware verificable/);
+  await assert.rejects(readCpuHardwareEvents(1000, 2000, async () => ({ events: [{ id: 19, at: 999 }] })), /registro de hardware verificable/);
 });

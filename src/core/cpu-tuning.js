@@ -11,18 +11,25 @@ export function cpuTuningAdvice(cpuName, nativeStatus = null) {
   const amd = /\bAMD\b.*\bRyzen\b|\bRyzen\b/i.test(name);
   const intel = /\bIntel\b/i.test(name);
   const ryzen9600x = /\bRyzen\s+5\s+9600X\b/i.test(name);
+  const supportedModel = ryzen9600x || /\bRyzen\s+7\s+9800X3D\b/i.test(name);
+  const monitoredRyzen = /\bRyzen\s+[579]\s+[79]\d{3}(?:X3D|X|F)?\b/i.test(name) ||
+    /\bRyzen\s+[579]\s+(?:5500X3D|5[6-9]\d{2}(?:XT|X3D|X)?)\b/i.test(name);
   return {
     name: name || 'Procesador no identificado',
     vendor: amd ? 'amd' : intel ? 'intel' : 'other',
     candidate: amd,
-    supported: ryzen9600x,
+    supported: supportedModel,
     external: amd,
-    directControl: ryzen9600x && nativeStatus?.supported === true,
-    canConfigurePbo: ryzen9600x,
-    note: ryzen9600x
-      ? nativeStatus?.supported === true ? 'CPU conectada. PBO y Curve Optimizer se aplican directamente desde VORTEX y se verifican con el firmware.' : 'Ryzen 5 9600X detectado. Conecta la CPU para verificar el firmware y habilitar el tuning directo.'
+    directControl: supportedModel && nativeStatus?.supported === true,
+    canConfigurePbo: supportedModel,
+    note: nativeStatus?.readOnly
+      ? nativeStatus.error
+      : supportedModel
+        ? 'Conecta la CPU para verificar el firmware y habilitar el tuning directo.'
+        : monitoredRyzen
+          ? 'Este Ryzen puede mostrar lecturas SMU si VORTEX reconoce la tabla del firmware.'
       : amd
-        ? 'Ryzen detectado. Ryzen Master puede ofrecer controles segun el modelo y la placa. Los perfiles PPT/TDC/EDC de esta version estan preparados para el Ryzen 5 9600X. VORTEX no modifica frecuencias ni voltajes.'
+        ? 'El dashboard y el benchmark siguen disponibles para este Ryzen.'
         : intel
           ? 'Esta version del modulo de ajuste esta limitada a AMD Ryzen. No se modificaran procesadores Intel.'
           : 'No se pudo confirmar un procesador AMD Ryzen compatible. No se modificaran frecuencias ni voltajes.'

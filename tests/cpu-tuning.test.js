@@ -8,7 +8,8 @@ test('Ryzen se reconoce para guiar al usuario a la herramienta oficial', () => {
   assert.equal(amd.external, true);
   assert.equal(amd.candidate, true);
   assert.equal(amd.supported, false);
-  assert.match(amd.note, /no modifica frecuencias ni voltajes/i);
+  assert.equal(amd.directControl, false);
+  assert.match(amd.note, /dashboard.*benchmark/i);
   assert.equal(cpuTuningAdvice('Intel Core i5-12400').external, false);
   assert.equal(cpuTuningAdvice('').supported, false);
 });

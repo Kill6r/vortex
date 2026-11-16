@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { nativeTuningTarget } from '../core/cpu-native.js';
-import { BENCHMARK_MAX_SECONDS, BOOST_STEPS, RYZEN_9600X_BOOST_ZERO_MHZ, rankBenchmarkProfiles, sweepBoostLimit } from '../core/cpu-benchmark-analysis.js';
+import { BENCHMARK_MAX_SECONDS, BOOST_STEPS, CPU_VALIDATION_DURATIONS, RYZEN_9600X_BOOST_ZERO_MHZ, RYZEN_9600X_MAX_BOOST_TARGET_MHZ, rankBenchmarkProfiles, sweepBoostLimit } from '../core/cpu-benchmark-analysis.js';
 
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const key = target => [target.limits.ppt, target.limits.tdc, target.limits.edc, target.scalar, target.fmaxMHz, ...target.curveOptimizer].join(':');
@@ -26,15 +26,16 @@ function* profileStages(maxBoostMHz) {
   }
 }
 
-export function createCpuProfileSweep({ read, tune, runBenchmark, stopBenchmark, onResult = () => {}, wait = pause }) {
+export function createCpuProfileSweep({ read, tune, runBenchmark, stopBenchmark, readHardwareEvents, onResult = () => {}, wait = pause, clock = Date.now }) {
   let state = { running: false, results: [] };
+  let validation = null;
   let task;
   let cancelled;
   let fault;
   let analysis = null;
   let analyzing = false;
-  const status = () => structuredClone(state);
-  const isRunning = () => state.running;
+  const isRunning = () => state.running || validation?.running === true;
+  const status = () => structuredClone({ ...state, running: isRunning(), validation });
 
   function healthy(frame, ceiling) {
     if (frame.tuningReady === false || !frame.tuning?.supported || !Number.isFinite(frame.temperatureC) || !Number.isFinite(frame.pptW)) {
@@ -46,18 +47,18 @@ export function createCpuProfileSweep({ read, tune, runBenchmark, stopBenchmark,
   function inspect(frame) {
     const boostLimit = sweepBoostLimit(frame.tuning);
     if (boostLimit === null || !Number.isFinite(frame.thermalLimitC)) {
-      throw new Error(frame.tuning?.error || 'La búsqueda automática requiere un Ryzen 5 9600X y firmware compatible.');
+      throw new Error(frame.tuning?.error || 'La búsqueda automática requiere un Ryzen 5 9600X o Ryzen 7 9800X3D con firmware compatible.');
     }
     if (!frame.tuningReady) throw new Error('Conecta la CPU antes de analizarla.');
     const ceiling = Math.min(85, Math.floor(frame.thermalLimitC - 10));
     healthy(frame, ceiling);
-    const baseline = nativeTuningTarget(frame.tuning);
+    const baseline = nativeTuningTarget(frame.tuning, frame.tuning);
     if (key(baseline) !== frame.tuning.fingerprint) throw new Error('No se pudo confirmar la configuración activa.');
     return { baseline, ceiling, boostLimit };
   }
 
   async function analyze() {
-    if (state.running || analyzing) throw new Error('Ya hay una operación de CPU en curso.');
+    if (isRunning() || analyzing) throw new Error('Ya hay una operación de CPU en curso.');
     analyzing = true;
     analysis = null;
     try {
@@ -94,17 +95,15 @@ export function createCpuProfileSweep({ read, tune, runBenchmark, stopBenchmark,
     throw new Error('No llegó una lectura actualizada de la configuración.');
   }
 
-  async function execute(baseline, options, ceiling, maxBoostMHz, objective) {
+  async function execute(run, baseline, candidates, options, ceiling, stages) {
     const original = key(baseline);
-    const candidates = [{ label: 'Configuración inicial', target: baseline }];
     const scheduled = new Set([original]);
-    const stages = profileStages(maxBoostMHz);
     let current = original;
     let pending = null;
     try {
       for (const [index, candidate] of candidates.entries()) {
         if (cancelled) break;
-        state.phase = 'Enfriando';
+        run.phase = 'Enfriando';
         const target = key(candidate.target);
         let frame = await readExpected(current);
         for (let attempt = 0; frame.temperatureC > ceiling - 5 && attempt < 60 && !cancelled; attempt++) {
@@ -115,10 +114,11 @@ export function createCpuProfileSweep({ read, tune, runBenchmark, stopBenchmark,
         if (cancelled) break;
         healthy(frame, ceiling);
         if (frame.temperatureC > ceiling - 5) throw new Error('La CPU no se enfrió lo suficiente para continuar.');
-        state.current = index + 1;
-        state.profile = candidate.label;
+        run.current = index + 1;
+        run.profile = candidate.label;
+        const hardwareWindowStart = candidate.role ? clock() : null;
         if (target !== current) {
-          state.phase = 'Aplicando y verificando';
+          run.phase = 'Aplicando y verificando';
           pending = target;
           const reply = await tune(candidate.target, current);
           if (reply.after?.fingerprint !== target) throw new Error('El firmware devolvió una configuración distinta.');
@@ -129,7 +129,7 @@ export function createCpuProfileSweep({ read, tune, runBenchmark, stopBenchmark,
         }
         if (cancelled) break;
         healthy(frame, ceiling);
-        state.phase = 'Midiendo';
+        run.phase = 'Midiendo';
         const monitor = setInterval(() => {
           if (fault || cancelled) return;
           try {
@@ -142,25 +142,41 @@ export function createCpuProfileSweep({ read, tune, runBenchmark, stopBenchmark,
           }
         }, 500);
         try {
-          const result = await runBenchmark({ ...options, configuration: frame.tuning });
+          const durationSeconds = candidate.durationSeconds ?? options.durationSeconds;
+          const result = await runBenchmark({ ...options, durationSeconds, configuration: frame.tuning });
           if (cancelled || fault) break;
           const finalFrame = read();
           healthy(finalFrame, ceiling);
           if (finalFrame.tuning.fingerprint !== current) throw new Error('La configuración cambió durante el benchmark.');
           if (result.sensors?.maxTemperatureC >= ceiling) throw new Error(`Se alcanzó el límite de prueba de ${ceiling} °C.`);
           if (!Number.isFinite(result.scoreMops) || result.scoreMops <= 0 ||
-            result.configuration?.fingerprint !== current || !(result.sensors?.temperatureSamples >= Math.ceil(options.durationSeconds / 2))) {
+            result.configuration?.fingerprint !== current || !(result.sensors?.temperatureSamples >= Math.ceil(durationSeconds / 2))) {
             throw new Error('El perfil no reunió suficientes muestras válidas.');
           }
-          state.results.push({ ...result, label: candidate.label, boostMHz: candidate.boostMHz ?? null });
-          try { onResult(result); }
-          catch { state.historyError = 'No se pudo guardar un resultado de la ronda en el historial.'; }
+          const row = { ...result, label: candidate.label, boostMHz: candidate.boostMHz ?? null };
+          if (candidate.role) {
+            run.phase = 'Consultando errores de hardware';
+            await wait(1000);
+            if (cancelled || fault) break;
+            let events = null;
+            try { events = await readHardwareEvents(hardwareWindowStart, clock()); } catch {}
+            if (cancelled || fault) break;
+            run.results.push({ ...row, role: candidate.role, validationSeconds: durationSeconds, hardwareEvents: events });
+            if (events?.length) {
+              run.hardwareErrors = true;
+              throw new Error('Windows registró errores de hardware durante la prueba.');
+            }
+          } else {
+            run.results.push(row);
+            try { onResult(result); }
+            catch { run.historyError = 'No se pudo guardar un resultado de la ronda en el historial.'; }
+          }
         } finally {
           clearInterval(monitor);
         }
-        if (index === candidates.length - 1) {
-          const preferred = rankBenchmarkProfiles(state.results)[objective][0];
-          const seed = preferred ? nativeTuningTarget(preferred.configuration) : baseline;
+        if (stages && index === candidates.length - 1) {
+          const preferred = rankBenchmarkProfiles(run.results)[run.objective][0];
+          const seed = preferred ? nativeTuningTarget(preferred.configuration, preferred.configuration) : baseline;
           while (index === candidates.length - 1) {
             const stage = stages.next();
             if (stage.done) break;
@@ -176,7 +192,7 @@ export function createCpuProfileSweep({ read, tune, runBenchmark, stopBenchmark,
     } catch (error) {
       if (!fault && !cancelled) fault = error;
     } finally {
-      state.phase = 'Restaurando configuración inicial';
+      run.phase = 'Restaurando configuración inicial';
       try {
         if (pending) await wait(1500);
         let frame = read();
@@ -190,20 +206,20 @@ export function createCpuProfileSweep({ read, tune, runBenchmark, stopBenchmark,
           await tune(baseline, actual);
           await readExpected(original, actual);
         }
-        state.restored = true;
+        run.restored = true;
       } catch (error) {
-        state.restoreError = error.message;
+        run.restoreError = error.message;
       }
-      state.error = fault?.message ?? null;
-      state.cancelled = cancelled;
-      state.running = false;
-      state.phase = null;
-      state.total = state.current;
+      run.error = fault?.message ?? null;
+      run.cancelled = cancelled;
+      run.running = false;
+      run.phase = null;
+      if (!run.cancelled && !run.error) run.total = run.current;
     }
   }
 
   function start({ durationSeconds, workerCount, maxBoostMHz, analysisId, objective = 'balanced' } = {}) {
-    if (state.running || analyzing) throw new Error('Ya hay una operación de CPU en curso.');
+    if (isRunning() || analyzing) throw new Error('Ya hay una operación de CPU en curso.');
     if (!['performance', 'balanced'].includes(objective)) throw new Error('Selecciona un objetivo de búsqueda válido.');
     if (!Number.isInteger(durationSeconds) || durationSeconds < 10 || durationSeconds > BENCHMARK_MAX_SECONDS || !Number.isInteger(workerCount) || workerCount < 1) {
       throw new Error('Selecciona una duración y cantidad de hilos válidas.');
@@ -220,12 +236,40 @@ export function createCpuProfileSweep({ read, tune, runBenchmark, stopBenchmark,
     cancelled = false;
     fault = null;
     state = { running: true, current: 0, total: 9 + maxBoostMHz / 25, ceiling, maxBoostMHz, objective, results: [] };
-    task = execute(baseline, { durationSeconds, workerCount }, ceiling, maxBoostMHz, objective);
+    validation = null;
+    task = execute(state, baseline, [{ label: 'Configuración inicial', target: baseline }],
+      { durationSeconds, workerCount }, ceiling, profileStages(maxBoostMHz));
+    return status();
+  }
+
+  function startValidation({ resultId, expectedFingerprint } = {}) {
+    if (isRunning() || analyzing) throw new Error('Ya hay una operación de CPU en curso.');
+    const measured = state.results.find(row => row.id === resultId);
+    if (!state.restored || state.error || state.cancelled || typeof resultId !== 'string' || !measured) {
+      throw new Error('Elige un perfil de una búsqueda completada.');
+    }
+    const frame = read();
+    const { baseline, ceiling } = inspect(frame);
+    if (frame.tuning.fingerprint !== expectedFingerprint) throw new Error('Cambió el perfil activo. Revisa los valores antes de validar.');
+    const target = nativeTuningTarget(measured.configuration, frame.tuning);
+    if (target.fmaxMHz > RYZEN_9600X_MAX_BOOST_TARGET_MHZ && target.fmaxMHz !== baseline.fmaxMHz) {
+      throw new Error('El perfil medido supera el límite de boost de VORTEX.');
+    }
+    const candidates = CPU_VALIDATION_DURATIONS.flatMap(durationSeconds => {
+      const trial = { label: `Candidato · ${durationSeconds} s`, role: 'candidate', target, durationSeconds };
+      if (key(target) === key(baseline)) return [trial];
+      return [{ label: `Perfil activo · ${durationSeconds} s`, role: 'baseline', target: baseline, durationSeconds }, trial];
+    });
+    analysis = null;
+    cancelled = false;
+    fault = null;
+    validation = { running: true, current: 0, total: candidates.length, ceiling, resultId, results: [] };
+    task = execute(validation, baseline, candidates, { workerCount: measured.workerCount }, ceiling);
     return status();
   }
 
   async function stop() {
-    if (state.running) {
+    if (isRunning()) {
       cancelled = true;
       await stopBenchmark();
       await task;
@@ -233,5 +277,5 @@ export function createCpuProfileSweep({ read, tune, runBenchmark, stopBenchmark,
     return status();
   }
 
-  return { analyze, start, stop, status, isRunning };
+  return { analyze, start, startValidation, stop, status, isRunning };
 }

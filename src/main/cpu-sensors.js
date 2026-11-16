@@ -42,7 +42,7 @@ export function normalizeCpuSensorFrame(frame = {}) {
   const validMHz = value => Number.isFinite(value) && value > 100 && value < 10000 ? value : null;
   const windowsAverage = validMHz(frame.windowsClock?.averageMHz);
   const windowsPeak = validMHz(frame.windowsClock?.peakMHz);
-  const smu = status === 'ready' && frame.smu?.tuning?.supported === true ? frame.smu : null;
+  const smu = status === 'ready' && (frame.smu?.tuning?.supported === true || frame.smu?.tuning?.readOnly === true) ? frame.smu : null;
   const native = {};
   for (const [key, min, max] of [['pptW',0,300],['tdcA',0,300],['pptLimitW',1,300],['tdcLimitA',1,300],['edcLimitA',1,500],['cpuVoltageV',.1,2],['socVoltageV',.1,2],['socPowerW',0,200],['fabricClockMHz',100,4000],['thermalLimitC',30,120]]) {
     if (Number.isFinite(smu?.[key]) && smu[key] >= min && smu[key] <= max) native[key] = smu[key];
@@ -58,6 +58,7 @@ export function normalizeCpuSensorFrame(frame = {}) {
   return {
     ...result,
     ...native,
+    packagePowerW: result.packagePowerW ?? (Number.isFinite(smu?.packagePowerW) && smu.packagePowerW >= 0 && smu.packagePowerW <= 300 ? smu.packagePowerW : null),
     tuning: smu?.tuning ?? {supported:false,error:frame.smu?.tuning?.error || null},
     peakClockMHz: result.peakClockMHz ?? windowsPeak,
     peakEstimated: result.peakClockMHz === null && windowsPeak !== null,
@@ -65,7 +66,7 @@ export function normalizeCpuSensorFrame(frame = {}) {
     frequencyEstimated: averageMHz === null && windowsAverage !== null,
     source: smu ? 'SMU directo + sensores integrados' : rows.length ? 'Lector integrado · Libre Hardware Monitor' : 'Contadores de Windows',
     sensorStatus: status,
-    note: smu ? 'Telemetría directa cada segundo. EDC muestra el límite configurado; este firmware no publica aquí su corriente instantánea.' : notes[status] || notes['sensor-error'],
+    note: smu?.tuning.readOnly ? smu.tuning.error : smu ? 'Telemetría directa cada segundo. EDC muestra el límite configurado si la corriente instantánea no está disponible.' : notes[status] || notes['sensor-error'],
     sampledAt: Number.isFinite(frame.sampledAt) ? frame.sampledAt : Date.now()
   };
 }

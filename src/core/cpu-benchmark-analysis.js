@@ -1,5 +1,6 @@
 export const BENCHMARK_MAX_SECONDS = 300;
 export const BENCHMARK_VERSION = 2;
+export const CPU_VALIDATION_DURATIONS = Object.freeze([20, 90]);
 export const BOOST_STEPS = Array.from({ length: 9 }, (_, index) => index * 25);
 // SMU FMax reference for the supported 9600X firmware, checked against the zero override.
 export const RYZEN_9600X_BOOST_ZERO_MHZ = 5450;
@@ -13,8 +14,10 @@ export function boostOverrideFromTargetMHz(targetMHz) {
 }
 
 export function sweepBoostLimit(tuning) {
-  if (!tuning?.supported || !/\b9600X\b/i.test(tuning.cpu) || tuning.tableVersion !== '0x00620105' || !Number.isFinite(tuning.fmaxMHz)) return null;
-  return RYZEN_9600X_MAX_OVERRIDE_MHZ;
+  if (!tuning?.supported || tuning.tableVersion !== '0x00620105' || !Number.isFinite(tuning.fmaxMHz)) return null;
+  if (/\b9600X\b/i.test(tuning.cpu)) return RYZEN_9600X_MAX_OVERRIDE_MHZ;
+  if (/\b9800X3D\b/i.test(tuning.cpu) && tuning.boostAdjustable === false) return 0;
+  return null;
 }
 
 export function summarizeBenchmarkSensors(samples) {

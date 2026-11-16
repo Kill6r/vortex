@@ -3,7 +3,7 @@ import { Activity, AlertTriangle, Check, ChevronDown, ClipboardCopy, Cpu, Gauge,
 import { compareCpuBenchmarks, cpuTuningAdvice, RYZEN_5_9600X_PROFILES } from '../core/cpu-tuning.js';
 import { chartSegments, gaugeStatus, validateCpuProfile } from '../core/cpu-dashboard.js';
 import { nativeTuningTarget, NATIVE_LIMITS } from '../core/cpu-native.js';
-import { BENCHMARK_MAX_SECONDS, BOOST_STEPS, RYZEN_9600X_BOOST_ZERO_MHZ, benchmarkProfileRecommendations, boostOverrideFromTargetMHz, sweepBoostLimit } from '../core/cpu-benchmark-analysis.js';
+import { BENCHMARK_MAX_SECONDS, BOOST_STEPS, CPU_VALIDATION_DURATIONS, RYZEN_9600X_BOOST_ZERO_MHZ, benchmarkProfileRecommendations, boostOverrideFromTargetMHz, sweepBoostLimit } from '../core/cpu-benchmark-analysis.js';
 
 const DRAFT_KEY = 'vortex.cpu.pbo.9600x.v2';
 const DURATION_KEY = 'vortex.cpu.recording.minutes';
@@ -13,6 +13,56 @@ const timeLabel = seconds => `${String(Math.floor(Math.max(0, seconds) / 60)).pa
 const REFERENCE_KEY = 'vortex.cpu.benchmark.reference.v1';
 const number = (value, digits = 1) => Number.isFinite(value) ? value.toLocaleString('es-CO', { maximumFractionDigits: digits }) : '—';
 const date = value => value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString('es-CO') : '—';
+
+function showHardwareEvents(row) {
+  if (!row) return '—';
+  if (!row.hardwareEvents) return 'Registro no disponible';
+  if (row.hardwareEvents.length === 0) return 'Sin errores detectados';
+  const ids = [...new Set(row.hardwareEvents.map(event => event.id))];
+  return `WHEA · eventos ${ids.join(', ')}`;
+}
+
+function ProfileValidation({ trial, busy, stop }) {
+  const unknown = trial.results.some(row => row.hardwareEvents === null);
+  let verdict = '';
+  if (!trial.running) {
+    if (trial.hardwareErrors) verdict = 'Se detectaron errores de hardware durante la prueba.';
+    else if (trial.cancelled || trial.error) verdict = 'Prueba interrumpida.';
+    else if (unknown) verdict = 'Pruebas completadas. Windows no permitió comprobar todos los intervalos.';
+    else verdict = 'Pruebas completadas sin errores de hardware detectados.';
+  }
+  return <section className="cpu-section">
+    <div className="cpu-section-header"><h2>Validación del perfil</h2></div>
+    {trial.running && <div className="cpu-bench-result">
+      <span role="status">{trial.phase} · {trial.profile || 'Preparando la prueba'} · {Math.max(1, trial.current)}/{trial.total}</span>
+      <button className="cpu-button danger" disabled={busy} onClick={stop}><Square size={14}/>Detener y restaurar</button>
+    </div>}
+    {verdict && <p role="status">{verdict}</p>}
+    {trial.error && !trial.hardwareErrors && <p className="cpu-error-text" role="alert">{trial.error}</p>}
+    {trial.restoreError && <p className="cpu-error-text" role="alert">No se confirmó la restauración. {trial.restoreError}</p>}
+    {trial.restored && <p className="cpu-muted">Configuración inicial restaurada y verificada.</p>}
+    {!!trial.results.length && CPU_VALIDATION_DURATIONS.map(seconds => {
+      const baseline = trial.results.find(row => row.validationSeconds === seconds && row.role === 'baseline');
+      const candidate = trial.results.find(row => row.validationSeconds === seconds && row.role === 'candidate');
+      if (!baseline && !candidate) return null;
+      const metrics = [
+        ['Rendimiento', baseline?.scoreMops, candidate?.scoreMops, 'Mops/s', '%'],
+        ['Temperatura máxima', baseline?.sensors.maxTemperatureC, candidate?.sensors.maxTemperatureC, '°C', '°C'],
+        ['PPT medio', baseline?.sensors.averagePptW, candidate?.sensors.averagePptW, 'W', 'W']
+      ];
+      return <div className="cpu-table-scroll" key={seconds}><table className="cpu-history">
+        <caption>Prueba de {seconds} segundos</caption>
+        <thead><tr><th scope="col">Medición</th><th scope="col">Perfil inicial</th><th scope="col">Perfil candidato</th><th scope="col">Diferencia</th></tr></thead>
+        <tbody>{metrics.map(([label, initial, selected, unit, differenceUnit]) => {
+          const change = Number.isFinite(initial) && Number.isFinite(selected)
+            ? differenceUnit === '%' ? (selected / initial - 1) * 100 : selected - initial : null;
+          return <tr key={label}><th scope="row">{label}</th><td>{number(initial)} {unit}</td><td>{number(selected)} {unit}</td>
+            <td>{Number.isFinite(change) ? `${change > 0 ? '+' : ''}${number(change)} ${differenceUnit}` : '—'}</td></tr>;
+        })}<tr><th scope="row">Errores de hardware</th><td>{showHardwareEvents(baseline)}</td><td>{showHardwareEvents(candidate)}</td><td>—</td></tr></tbody>
+      </table></div>;
+    })}
+  </section>;
+}
 
 function SensorGauge({ label, value, unit, limit, help }) {
   const status = gaugeStatus(value, limit);
@@ -45,8 +95,8 @@ function IntegerDraftInput({ label, value, onChange, invalid }) {
     }}/>;
 }
 
-function NumericRow({ label, value, unit, min, max, step = 1, onChange, help }) {
-  return <label className="cpu-tuning-row"><span>{label}{help && <small>{help}</small>}</span><input type="number" aria-label={label} value={value} min={min} max={max} step={step} onChange={event => onChange(event.target.value === '' ? '' : Number(event.target.value))}/><span className="cpu-unit">{unit}</span></label>;
+function NumericRow({ label, value, unit, min, max, step = 1, onChange, help, disabled }) {
+  return <label className="cpu-tuning-row"><span>{label}{help && <small>{help}</small>}</span><input type="number" aria-label={label} value={value} min={min} max={max} step={step} disabled={disabled} onChange={event => onChange(event.target.value === '' ? '' : Number(event.target.value))}/><span className="cpu-unit">{unit}</span></label>;
 }
 
 export default function CpuTuningPage({ api }) {
@@ -101,14 +151,18 @@ export default function CpuTuningPage({ api }) {
   const fmaxMHz = boostOverrideMHz === null ? boostReferenceMHz : RYZEN_9600X_BOOST_ZERO_MHZ + boostOverrideMHz;
   const profile = { name: profileName || 'Perfil preparado', cpu: cpuName, coreCount, limits: { ...limits, ppt: parseIntegerDraft(limits.ppt) }, curveMode, curveOptimizer: curveMode === 'off' ? Array(coreCount).fill(0) : curveMode === 'all' ? Array(coreCount).fill(allCurve) : curve, boostOverrideMHz: boostOverrideMHz ?? 0, scalar, ...(fmaxMHz === null ? {} : {fmaxMHz}) };
   const actual = live?.tuning?.supported ? live.tuning : null;
-  const activeBoostOffset = actual ? actual.fmaxMHz - RYZEN_9600X_BOOST_ZERO_MHZ : null;
+  const readOnlyCpu = live?.tuning?.readOnly ? live.tuning : null;
+  const hardwareInfo = actual ?? readOnlyCpu;
+  const boostAdjustable = Boolean(actual && actual.boostAdjustable !== false);
+  const powerCaps = actual?.powerCeilings ?? NATIVE_LIMITS;
+  const activeBoostOffset = boostAdjustable ? actual.fmaxMHz - RYZEN_9600X_BOOST_ZERO_MHZ : null;
   const tuningReady = live?.tuningReady === true;
   const tuningConnecting = live?.tuningConnecting === true;
   const availableSweepBoost = sweepBoostLimit(actual);
   const selectedSweepBoost = Math.min(sweepMaxBoost, availableSweepBoost ?? 0);
   const analysisReady = Boolean(sweepAnalysis && tuningReady && actual?.fingerprint === sweepAnalysis.fingerprint);
   let nativeError = '';
-  try { nativeTuningTarget(profile); } catch(e) { nativeError = e.message; }
+  try { nativeTuningTarget(profile, actual); } catch(e) { nativeError = e.message; }
   const validation = validateCpuProfile(profile);
   const selectedWorkers = benchMode === 'single' ? 1 : benchMode === 'multi' ? threads : workers;
   const validWorkers = Number.isInteger(selectedWorkers) && selectedWorkers > 0 && selectedWorkers <= threads;
@@ -124,7 +178,7 @@ export default function CpuTuningPage({ api }) {
 
   function syncBoost(targetMHz) {
     setBoostReferenceMHz(targetMHz);
-    setBoostOverride(boostOverrideFromTargetMHz(targetMHz));
+    setBoostOverride(boostAdjustable ? boostOverrideFromTargetMHz(targetMHz) : null);
   }
 
   function useHardwareValues(state, preservePpt = false) {
@@ -294,7 +348,7 @@ export default function CpuTuningPage({ api }) {
     if (!measured && game === 'Equilibrado') {
       setLimits({ ...source.limits, ppt: Math.max(10, Math.floor(source.limits.ppt * 0.9)) });
       setBoostOverride(null);
-    } else if (!measured) {
+    } else if (!measured && boostAdjustable) {
       setBoostOverride(200);
     }
     setTab('tuning');
@@ -311,9 +365,18 @@ export default function CpuTuningPage({ api }) {
       setSweep(status);
     });
   }
+  function validateMeasuredProfile(row) {
+    if (!actual || !tuningReady) return;
+    const sameProfile = row.configuration.fingerprint === actual.fingerprint;
+    const [short, long] = CPU_VALIDATION_DURATIONS;
+    const scope = sameProfile ? 'El candidato ya está activo. Se medirá ese perfil.'
+      : 'Se medirá el perfil activo y el candidato con los mismos hilos.';
+    if (!window.confirm(`¿Validar el perfil con pruebas de ${short} y ${long} segundos?\n\n${scope} Se consultarán los errores de hardware de Windows y se intentará restaurar la configuración inicial. Guarda tu trabajo antes de empezar.`)) return;
+    void act(async () => setSweep(await api.validateCpuSweepProfile({ resultId: row.id, expectedFingerprint: actual.fingerprint })));
+  }
   async function applyTuning() {
     if (!actual || !tuningReady || nativeError || !validation.valid) return;
-    const target = nativeTuningTarget(profile);
+    const target = nativeTuningTarget(profile, actual);
     if (!window.confirm(`¿Aplicar al procesador?\nPPT ${target.limits.ppt} W · TDC ${target.limits.tdc} A · EDC ${target.limits.edc} A\nFMax ${target.fmaxMHz} MHz · Scalar ${target.scalar}X\nCO por núcleo: ${target.curveOptimizer.join(', ')}\n\nUn ajuste inestable puede reiniciar el equipo. VORTEX comprobará los valores tras escribirlos. No se aplicará automáticamente al iniciar Windows.`)) return;
     await act(async () => {
       const revision = pptRevision.current;
@@ -331,7 +394,7 @@ export default function CpuTuningPage({ api }) {
   }
   const gauges = [
     { label: live?.peakEstimated ? 'Frecuencia pico estimada' : 'Frecuencia pico', value: live?.peakClockMHz, unit: 'MHz', help: live?.peakEstimated ? 'Contadores de Windows · estimación' : 'Pico de los núcleos publicados' },
-    { label: 'Temperatura CPU', value: live?.temperatureC, unit: '°C', limit: advice.supported ? 95 : null },
+    { label: 'Temperatura CPU', value: live?.temperatureC, unit: '°C', limit: live?.thermalLimitC },
     { label: 'Potencia CPU', value: live?.packagePowerW, unit: 'W' },
     { label: 'Potencia SoC', value: live?.socPowerW, unit: 'W' },
     { label: 'PPT', value: live?.pptW, unit: 'W', limit: live?.pptLimitW },
@@ -350,10 +413,10 @@ export default function CpuTuningPage({ api }) {
     <nav className="cpu-tabs" aria-label="Vistas de CPU">{[['dashboard', 'Dashboard', LayoutDashboard], ['tuning', 'Tuning', SlidersHorizontal]].map(([id, label, Icon]) => <button key={id} type="button" aria-current={tab === id ? 'page' : undefined} onClick={() => { setTab(id); setNotice(''); }}><Icon size={16}/>{label}</button>)}</nav>
     <div className={`cpu-connection ${tuningReady ? 'connected' : ''}`} role="status">
       <Activity size={20}/><div>
-        <strong>{tuningReady ? 'CPU conectada · ajustes disponibles' : tuningConnecting ? 'Conectando CPU…' : actual ? 'Sensores activos · falta autorizar los ajustes' : 'Conecta la CPU para activar los sensores'}</strong>
+        <strong>{tuningReady ? 'CPU conectada · ajustes disponibles' : readOnlyCpu ? 'CPU conectada · solo lectura' : tuningConnecting ? 'Conectando CPU…' : actual ? 'Sensores activos · falta autorizar los ajustes' : 'Conecta la CPU para activar los sensores'}</strong>
         <p>{tuningReady ? 'Lectura en vivo · PBO y Curve Optimizer disponibles' : actual ? 'Pulsa Conectar CPU y acepta el permiso de Windows para aplicar.' : live?.tuning?.error || live?.note || 'Iniciando el lector integrado…'}</p>
       </div>
-      {!tuningReady && <button className="cpu-button primary" disabled={busy || tuningConnecting || sweep.running} onClick={() => act(async () => {
+      {!tuningReady && !readOnlyCpu && <button className="cpu-button primary" disabled={busy || tuningConnecting || sweep.running} onClick={() => act(async () => {
         if (live?.sensorStatus === 'driver-missing') await api.activateCpuSensors();
         else await api.authorizeCpuSensors();
         const sensors = await api.cpuSensors();
@@ -373,8 +436,14 @@ export default function CpuTuningPage({ api }) {
         {live?.sensorStatus === 'access-denied' && <button className="cpu-button primary" disabled={busy} onClick={() => act(() => api.authorizeCpuSensors(), 'Permiso concedido al lector de hardware. Conectando sensores…')}>Permitir lectura de sensores</button>}
         {['sensor-error','stale'].includes(live?.sensorStatus) && <button className="cpu-button" disabled={busy} onClick={() => act(() => api.reconnectCpuSensors(), 'Reconectando el lector de sensores…')}><RefreshCw size={14}/>Reconectar sensores</button>}
       </details>
-      <details className="cpu-section" open><summary><ChevronDown size={17}/><h2>Configuración activa</h2><span>{actual ? 'Leída del procesador' : 'Pendiente de conexión'}</span></summary><div className="cpu-summary-grid">
-        {[['Modo', actual ? 'PBO avanzado' : '—'], ['PPT', actual ? `${actual.limits.ppt} W` : '—'], ['TDC', actual ? `${actual.limits.tdc} A` : '—'], ['EDC', actual ? `${actual.limits.edc} A` : '—'], ['Techo de boost (FMax)', actual ? `${actual.fmaxMHz} MHz` : '—'], ['PBO Scalar', actual ? `${actual.scalar}X` : '—'], ['Curve Optimizer', actual ? actual.curveOptimizer.join(' / ') : '—']].map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
+      <details className="cpu-section" open><summary><ChevronDown size={17}/><h2>Configuración activa</h2><span>{hardwareInfo ? 'Leída del procesador' : 'Pendiente de conexión'}</span></summary><div className="cpu-summary-grid">
+        {[['Modo', actual ? 'PBO avanzado' : readOnlyCpu ? 'Solo lectura' : '—'],
+          ['PPT', Number.isFinite(live?.pptLimitW) ? `${live.pptLimitW} W` : '—'],
+          ['TDC', Number.isFinite(live?.tdcLimitA) ? `${live.tdcLimitA} A` : '—'],
+          ['EDC', Number.isFinite(live?.edcLimitA) ? `${live.edcLimitA} A` : '—'],
+          ['Techo de boost (FMax)', Number.isFinite(hardwareInfo?.fmaxMHz) ? `${hardwareInfo.fmaxMHz} MHz` : '—'],
+          ['PBO Scalar', Number.isFinite(hardwareInfo?.scalar) ? `${hardwareInfo.scalar}X` : '—'],
+          ['Curve Optimizer', hardwareInfo?.curveOptimizer?.join(' / ') || '—']].map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
       </div><button className="cpu-link" onClick={() => setTab('tuning')}>Editar configuración <SlidersHorizontal size={13}/></button></details>
 
       <section className="cpu-section"><div className="cpu-section-header"><h2><Activity size={17}/>Gráficas de sensores</h2><div className="cpu-segments" aria-label="Fuente de las gráficas"><button aria-pressed={chartSource === 'live'} onClick={() => setChartSource('live')}>En vivo</button><button aria-pressed={chartSource === 'recording'} onClick={() => setChartSource('recording')}>Grabación</button></div></div>
@@ -404,7 +473,7 @@ export default function CpuTuningPage({ api }) {
       <section className="cpu-section">
         <div className="cpu-section-header"><h2>Optimización automática de CPU</h2></div>
         <p className="cpu-muted">Analiza los sensores y mide tu perfil actual. Luego prueba cambios de Curve Optimizer, PPT, TDC, EDC y boost. Cada etapa parte del mejor resultado medido para el objetivo elegido.</p>
-        <p className="cpu-muted">Compatible con Ryzen 5 9600X y firmware reconocido. La curva cambia en pasos de 5 por núcleo y la prueba mantiene los límites de potencia y corriente en el nivel inicial o por debajo.</p>
+        <p className="cpu-muted">Compatible con Ryzen 5 9600X y Ryzen 7 9800X3D con firmware reconocido. La curva cambia en pasos de 5 por núcleo. La prueba mantiene los límites de potencia y corriente en el nivel inicial o por debajo.</p>
         <button className="cpu-button" disabled={!api?.analyzeCpuSweep || !tuningReady || busy || benchmark.running || sweep.running} onClick={() => act(async () => {
           setSweepAnalysis(null);
           setSweepAnalysis(await api.analyzeCpuSweep());
@@ -421,10 +490,10 @@ export default function CpuTuningPage({ api }) {
             {BOOST_STEPS.filter(step => step <= (sweep.running ? sweep.maxBoostMHz : sweepAnalysis?.boostLimit ?? availableSweepBoost ?? 0)).map(step => <option key={step} value={step}>{step ? `+${step} MHz` : 'Conservar boost'}</option>)}
           </select></label>
           <button className="cpu-button primary" disabled={!api?.startCpuSweep || !analysisReady || busy || benchmark.running || sweep.running || !validWorkers || !validBenchDuration} onClick={startSweep}><Play size={14}/>Buscar mejor perfil</button>
-          {sweep.running && <button className="cpu-button danger" disabled={busy} onClick={() => act(async () => setSweep(await api.stopCpuSweep()))}><Square size={14}/>Detener y restaurar</button>}
+          {sweep.running && !sweep.validation?.running && <button className="cpu-button danger" disabled={busy} onClick={() => act(async () => setSweep(await api.stopCpuSweep()))}><Square size={14}/>Detener y restaurar</button>}
         </div>
         {analysisReady && validBenchDuration && <p className="cpu-muted">{benchSeconds} s por perfil, hasta {9 + selectedSweepBoost / 25} pruebas, más el tiempo de enfriamiento.</p>}
-        {sweep.running && <p role="status">{sweep.phase} · prueba {Math.max(1, sweep.current)} de hasta {sweep.total} · {sweep.profile || 'Configuración inicial'} · límite {sweep.ceiling} °C</p>}
+        {sweep.running && !sweep.validation?.running && <p role="status">{sweep.phase} · prueba {Math.max(1, sweep.current)} de hasta {sweep.total} · {sweep.profile || 'Configuración inicial'} · límite {sweep.ceiling} °C</p>}
         {sweep.error && <p className="cpu-error-text" role="alert">Ronda detenida. {sweep.error}</p>}
         {sweep.restoreError && <p className="cpu-error-text" role="alert">No se confirmó la restauración. {sweep.restoreError} Revisa la configuración activa antes de seguir.</p>}
         {sweep.historyError && <p className="cpu-error-text" role="alert">{sweep.historyError}</p>}
@@ -432,6 +501,7 @@ export default function CpuTuningPage({ api }) {
         {!sweep.running && sweep.restored && !sweep.cancelled && !sweep.error && preferredSweepProfile && <div className="cpu-bench-result">
           <span>Mejor perfil medido · {sweep.objective === 'performance' ? 'Máximo rendimiento' : 'Equilibrado'} · {preferredSweepProfile.label}</span>
           <strong>{number(preferredSweepProfile.scoreMops, 2)} <small>Mops/s</small></strong>
+          <button className="cpu-button primary" disabled={!api?.validateCpuSweepProfile || !tuningReady || busy || benchmark.running} onClick={() => validateMeasuredProfile(preferredSweepProfile)}>Validar perfil</button>
           <button className="cpu-button" disabled={busy || benchmark.running} onClick={() => prepareGameProfile('Perfil optimizado', preferredSweepProfile)}>Cargar recomendación</button>
         </div>}
         {!!sweep.results.length && <div className="cpu-table-scroll"><table className="cpu-history">
@@ -443,6 +513,8 @@ export default function CpuTuningPage({ api }) {
           })}</tbody>
         </table></div>}
       </section>
+
+      {sweep.validation && <ProfileValidation trial={sweep.validation} busy={busy} stop={() => act(async () => setSweep(await api.stopCpuSweep()))}/>}
 
       <section className="cpu-section">
         <div className="cpu-section-header"><h2>Perfiles recomendados</h2></div>
@@ -464,10 +536,10 @@ export default function CpuTuningPage({ api }) {
       </section>
     </> : <>
       <div className="cpu-tuning-intro"><SlidersHorizontal size={18}/><div><strong>Tuning directo del procesador</strong><p>Ajusta PBO y Curve Optimizer desde VORTEX. Cada cambio se verifica con el firmware. Los perfiles se aplican al pulsar Aplicar.</p></div><span>{tuningReady ? 'AJUSTES DISPONIBLES' : 'FALTA CONECTAR CPU'}</span></div>
-      {!advice.canConfigurePbo ? <div className="cpu-message error">Los perfiles de esta versión están preparados para Ryzen 5 9600X. El dashboard sigue disponible para consultar las lecturas de tu equipo.</div> : <>
+      {!advice.canConfigurePbo || readOnlyCpu ? <div className="cpu-message">{advice.note}</div> : <>
         <details className="cpu-section" open><summary><ChevronDown size={17}/><h2>PBO</h2><span>Límites y boost</span></summary><div className="cpu-tuning-grid">
-          <label className="cpu-tuning-row"><span>PPT</span><IntegerDraftInput label="PPT" value={limits.ppt} invalid={!(profile.limits.ppt >= 10 && profile.limits.ppt <= NATIVE_LIMITS.ppt)} onChange={value => { pptRevision.current++; setLimits(previous => ({ ...previous, ppt: value })); }}/><span className="cpu-unit">W</span></label><NumericRow label="TDC" unit="A" value={limits.tdc} min={1} max={NATIVE_LIMITS.tdc} onChange={v=>setLimits({...limits,tdc:v})}/><NumericRow label="EDC" unit="A" value={limits.edc} min={1} max={NATIVE_LIMITS.edc} onChange={v=>setLimits({...limits,edc:v})}/><label className="cpu-tuning-row"><span>Aumento de boost</span><select aria-label="Aumento de boost" value={boostOverrideMHz ?? 'keep'} disabled={!actual} onChange={event => setBoostOverride(event.target.value === 'keep' ? null : Number(event.target.value))}><option value="keep">Conservar {number(boostReferenceMHz, 0)} MHz</option>{BOOST_STEPS.map(step => <option key={step} value={step}>{step === 0 ? '0 MHz (referencia de fábrica)' : `+${step} MHz`}</option>)}</select><span className="cpu-unit">MHz</span></label><NumericRow label="PBO Scalar" unit="X" value={scalar} min={1} max={10} onChange={setScalar}/>
-        </div><p className="cpu-muted">Boost activo {number(actual?.fmaxMHz, 0)} MHz{Number.isFinite(activeBoostOffset) && ` (${activeBoostOffset > 0 ? '+' : ''}${activeBoostOffset} MHz)`} · Objetivo {number(fmaxMHz, 0)} MHz · Referencia {RYZEN_9600X_BOOST_ZERO_MHZ} MHz. Pulsa Aplicar para enviar el objetivo al procesador. La frecuencia real depende de la carga y la temperatura.</p></details>
+          <label className="cpu-tuning-row"><span>PPT</span><IntegerDraftInput label="PPT" value={limits.ppt} invalid={!(profile.limits.ppt >= 10 && profile.limits.ppt <= powerCaps.ppt)} onChange={value => { pptRevision.current++; setLimits(previous => ({ ...previous, ppt: value })); }}/><span className="cpu-unit">W</span></label><NumericRow label="TDC" unit="A" value={limits.tdc} min={1} max={powerCaps.tdc} onChange={v=>setLimits({...limits,tdc:v})}/><NumericRow label="EDC" unit="A" value={limits.edc} min={1} max={powerCaps.edc} onChange={v=>setLimits({...limits,edc:v})}/><label className="cpu-tuning-row"><span>Aumento de boost</span><select aria-label="Aumento de boost" value={boostOverrideMHz ?? 'keep'} disabled={!boostAdjustable} onChange={event => setBoostOverride(event.target.value === 'keep' ? null : Number(event.target.value))}><option value="keep">Conservar {number(boostReferenceMHz, 0)} MHz</option>{BOOST_STEPS.map(step => <option key={step} value={step}>{step === 0 ? '0 MHz (referencia de fábrica)' : `+${step} MHz`}</option>)}</select><span className="cpu-unit">MHz</span></label><NumericRow label="PBO Scalar" unit="X" value={scalar} min={1} max={10} disabled={!boostAdjustable} onChange={setScalar}/>
+        </div><p className="cpu-muted">Boost activo {number(actual?.fmaxMHz, 0)} MHz{Number.isFinite(activeBoostOffset) && ` (${activeBoostOffset > 0 ? '+' : ''}${activeBoostOffset} MHz)`} · Objetivo {number(fmaxMHz, 0)} MHz {boostAdjustable ? ' · Referencia ' + RYZEN_9600X_BOOST_ZERO_MHZ + ' MHz.' : ' · Boost y Scalar se conservan.'} Pulsa Aplicar para enviar el objetivo al procesador. La frecuencia real depende de la carga y la temperatura.</p></details>
         <details className="cpu-section" open><summary><ChevronDown size={17}/><h2>Curve Optimizer</h2><span>Pasos · no milivoltios</span></summary><div className="cpu-curve-mode"><span>Mode</span><div className="cpu-segments" aria-label="Modo Curve Optimizer">{[['off','OFF'],['all','All Cores'],['per-core','Per Core']].map(([id,label])=><button key={id} aria-pressed={curveMode===id} onClick={()=>changeCurveMode(id)}>{label}</button>)}</div></div>
           {curveMode==='all' && <div className="cpu-tuning-grid"><NumericRow label="Todos los núcleos" value={allCurve} unit="pasos" min={-30} max={10} onChange={setAllCurve}/></div>}
           {curveMode==='per-core' && <div className="cpu-core-grid">{curve.map((value,i)=><NumericRow key={i} label={`Núcleo ${i}`} value={value} unit="pasos" min={-30} max={10} onChange={next=>setCurve(current=>current.map((v,index)=>i===index?next:v))}/>)}</div>}
@@ -477,7 +549,7 @@ export default function CpuTuningPage({ api }) {
         {nativeError && <p className="cpu-muted">Para aplicar: {nativeError}</p>}
         <div className="cpu-tuning-actions"><button className="cpu-button primary" disabled={!tuningReady || !actual || !validation.valid || !!nativeError || busy || benchmark.running || sweep.running} onClick={applyTuning}><Check size={14}/>{busy ? 'Procesando…' : 'Aplicar al procesador'}</button><button className="cpu-button" disabled={!tuningReady || !actual?.canUndo || busy || benchmark.running || sweep.running} onClick={()=>act(async()=>{const revision=pptRevision.current;const result=await api.undoCpuTuning(actual.fingerprint);useHardwareValues(result.after,pptRevision.current!==revision);setLive(previous=>({...previous,tuning:{...result.after,canUndo:false}}));},'Configuración anterior restaurada y verificada. Durante esta sesión se conserva el último ajuste anterior.')}><RefreshCw size={14}/>Deshacer último cambio</button><button className="cpu-button" disabled={!validation.valid || busy} onClick={()=>act(copyProfile,'Configuración copiada.')}><ClipboardCopy size={14}/>Copiar</button></div>
         <section className="cpu-section"><div className="cpu-section-header"><h2><Save size={17}/>Perfiles con nombre</h2><span className="cpu-muted">{library.profiles.length} / 30 guardados</span></div><div className="cpu-profile-save"><label>Nombre del perfil<input aria-label="Nombre del perfil CPU" maxLength={60} value={profileName} placeholder="Ej. Diario equilibrado" onChange={e=>setProfileName(e.target.value)}/></label><button className="cpu-button primary" disabled={busy || !validation.valid || !profileName.trim()} onClick={saveProfile}><Save size={14}/>{library.profiles.some(p=>p.name.toLowerCase()===profileName.trim().toLowerCase()&&p.cpu===cpuName)?'Actualizar perfil':'Guardar perfil'}</button></div>
-          <div className="cpu-presets">{RYZEN_5_9600X_PROFILES.map(p=><button className="cpu-button" key={p.id} onClick={()=>{pptRevision.current++;setLimits({ppt:p.ppt,tdc:p.tdc,edc:p.edc});setNotice(`Límites ${p.name} cargados. Curve Optimizer se conserva.`);}}><RefreshCw size={13}/>{p.name}</button>)}</div>
+          <div className="cpu-presets">{(boostAdjustable ? RYZEN_5_9600X_PROFILES : []).map(p=><button className="cpu-button" key={p.id} onClick={()=>{pptRevision.current++;setLimits({ppt:p.ppt,tdc:p.tdc,edc:p.edc});setNotice(`Límites ${p.name} cargados. Curve Optimizer se conserva.`);}}><RefreshCw size={13}/>{p.name}</button>)}</div>
           {!library.profiles.length && <p className="cpu-empty">Guarda tu primer perfil. Incluirá PBO, FMax, Scalar y Curve Optimizer.</p>}
           <div className="cpu-profile-list">{library.profiles.map(p=><article key={p.id}><div><strong>{p.name}</strong><p>{p.limits.ppt} W · {p.limits.tdc} A · {p.limits.edc} A · CO {p.curveMode}</p><small>{p.cpu} · {date(p.savedAt)}</small></div><button className="cpu-button" disabled={p.cpu!==cpuName||p.coreCount!==coreCount} onClick={()=>loadProfile(p)}>Cargar</button><button className="cpu-icon-button" aria-label={`Eliminar perfil ${p.name}`} disabled={busy} onClick={()=>{if(window.confirm(`¿Eliminar el perfil «${p.name}»?`))void act(async()=>setLibrary(await api.deleteCpuProfile(p.id)));}}><Trash2 size={15}/></button></article>)}</div>
         </section>

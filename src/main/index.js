@@ -4,6 +4,7 @@ import { explainWindowsError } from '../core/errors.js';
 import { createLiveMetricsController } from './live-metrics.js';
 import { createCpuBenchmarkController } from './cpu-benchmark.js';
 import { createCpuProfileSweep } from './cpu-profile-sweep.js';
+import { readCpuHardwareEvents } from './cpu-hardware-events.js';
 import { RYZEN_9600X_MAX_BOOST_TARGET_MHZ } from '../core/cpu-benchmark-analysis.js';
 import { createCpuSensorController, activateCpuSensorDriver } from './cpu-sensors.js';
 import { createCpuRecordingController } from './cpu-recording.js';
@@ -193,6 +194,7 @@ app.whenReady().then(() => {
       cpuBenchmark.start(options).catch(error => { sweepBenchmarkComplete = null; reject(error); });
     }),
     stopBenchmark: () => cpuBenchmark.stop(),
+    readHardwareEvents: readCpuHardwareEvents,
     onResult: saveBenchmark
   });
   function requireSweepIdle() {
@@ -316,6 +318,10 @@ app.whenReady().then(() => {
     return sweep.start(options);
   });
   register('cpu:sweep-status', () => sweep.status());
+  register('cpu:sweep-validate', (_, options) => {
+    if (cpuBenchmark.status().running || manualTuning) throw new Error('Espera a que termine la operación de CPU actual.');
+    return sweep.startValidation(options);
+  });
   register('cpu:sweep-stop', () => sweep.stop());
   register('cpu:benchmark-status', () => cpuBenchmark.status());
   register('cpu:benchmark-stop', () => { requireSweepIdle(); return cpuBenchmark.stop(); });

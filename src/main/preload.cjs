@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('vortex', {
   stopCpuBenchmark: () => ipcRenderer.invoke('cpu:benchmark-stop'),
   analyzeCpuSweep: () => ipcRenderer.invoke('cpu:sweep-analyze'),
   startCpuSweep: options => ipcRenderer.invoke('cpu:sweep-start', options),
+  validateCpuSweepProfile: options => ipcRenderer.invoke('cpu:sweep-validate', options),
   cpuSweepStatus: () => ipcRenderer.invoke('cpu:sweep-status'),
   stopCpuSweep: () => ipcRenderer.invoke('cpu:sweep-stop'),
   onCpuBenchmarkStatus: callback => {

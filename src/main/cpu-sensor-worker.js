@@ -101,7 +101,7 @@ export function createCpuSensorWorker({ directory, normalize, spawnProcess = spa
     const current=latest();
     if(!current.tuningReady)throw new Error(current.tuning?.error || 'La conexión para aplicar ajustes no está disponible. Pulsa Conectar CPU y acepta el permiso de Windows.');
     if(typeof expectedFingerprint!=='string' || expectedFingerprint!==current.tuning.fingerprint)throw new Error('Actualiza la configuración actual antes de aplicar.');
-    const target=action==='undo'?null:nativeTuningTarget(input);
+    const target=action==='undo'?null:nativeTuningTarget(input, current.tuning);
     tuningBusy=true;
     const id=randomUUID();
     const file=elevatedFile;
